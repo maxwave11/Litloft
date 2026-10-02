@@ -123,7 +123,7 @@ Litloft checks each subscription for new videos about once an hour. The interval
 A subscription's details show its schedule, destination and imported items, with:
 
 - **Pause** / **Resume**, and **Sync now** to check immediately;
-- **Fetch more** to import older videos;
+- **Fetch more** to import up to the selected number of uploads not yet in the subscription, including Shorts and saved livestreams for YouTube channels. The request runs in the background;
 - **Retry** and **Ignore** for failed items;
 - **Resolve…** for an item whose filename is already taken;
 - **Delete subscription**, which stops tracking new videos. Files already imported stay.
@@ -149,3 +149,13 @@ A subscription's details show its schedule, destination and imported items, with
 
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp) for supported sites.
 - [Addon overview](overview.md) for per-drive policy.
+
+## Fetching a whole channel
+
+Open a channel's detail panel in **Manage** and select **Fetch all channel**. The background worker imports public uploads into `.loft` entries, including Shorts and saved livestreams, with available metadata and captions. It does not download video files. Each batch imports at most 15 new entries, spaces new video requests by at least eight seconds, waits 2–3 minutes after finishing, and continues. You can close the page; progress and the next attempt survive a backend restart.
+
+**Stop fetching** stops before the next video; a request already in progress may finish. Pausing the subscription pauses the task too. Existing imports are kept. The panel shows completion, a pause, or an error, and the next batch time while waiting. Manual **Fetch more** and **Sync now** are unavailable while the task is active.
+
+An upstream failure or caption rate limit stops the task and applies a one-hour cooldown. During that pause, **Fetch more**, **Sync now**, and **Fetch all channel** cannot start; changing the subscription's cooldown setting does not clear the pause. Review any failed items and retry them separately; use **Fetch all channel** again after the cooldown to continue discovering history. Private, removed, or otherwise inaccessible videos cannot be imported. Conservative pauses reduce request pressure but cannot guarantee that the provider will never restrict access. Listing reuses the existing increasing-prefix approach, so older listing pages may be requested again, with a two-second delay between extraction requests.
+
+API: `POST /api/addons/media_import/subscriptions/{id}/fetch-all` starts the task; `DELETE` at the same path stops it. Both require the owning `X-Lit-Drive` and return the subscription, including `fetch_all_status` (`idle`, `active`, `completed`, `cancelled`, `error`) and nullable `fetch_all_next_at` (the next batch time when active, or the error pause end when errored). Starting is idempotent while active; a paused source, pending sync, or unexpired cooldown returns 409. Non-channel sources return 400 and inaccessible subscriptions return 404.

@@ -279,6 +279,12 @@ In the Auth column, none means no secret. With secret, `X-Internal-Secret` must 
 
 The rules a new endpoint must pass are in [Internal API policy](../developer-guide/addon-dev.md#internal-api-policy).
 
+## Addon channel history
+
+Channel history import: the media_import addon exposes drive-scoped `POST` and `DELETE /api/addons/media_import/subscriptions/{id}/fetch-all`. See [Media Import](../addons/media-import.md#fetching-a-whole-channel) for request constraints and subscription state fields.
+
+`POST /api/addons/media_import/subscriptions/{id}/backfill` accepts `{ "count": 15 }` (`1`–`200`) and enqueues up to that many unseen uploads. YouTube channels use the full uploads list, including Shorts and saved livestreams; playlists use their normal listing. The response is `{ "status": "queued" }` or `{ "status": "already_queued" }`. Backfill and manual sync return 409 while Fetch all is active or during its error cooldown.
+
 ## WebSocket
 
 `/api/ws`. See [WebSocket events](websocket-events.md).
