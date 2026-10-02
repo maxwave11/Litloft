@@ -1,4 +1,3 @@
-import unicodedata
 import logging
 from typing import Annotated, Literal
 
@@ -40,6 +39,7 @@ from app.services import fileops
 from app.services.file_versions import record_version
 from app.services.filetype import classify
 from app.services.markdown_relations import sync_markdown_file_relations
+from app.services.name_search import fold_case, name_matches
 from app.services.atomic_write import replace_file_contents
 from app.services.safepath import resolve_safe_path
 from app.services.scanner import scan_drive
@@ -687,16 +687,12 @@ def list_drive_files(
                 ))
         else:
             query = query.filter(File.folder_path == path)
-    normalized_search: str | None = None
+    raw_search: str | None = None
     if search:
-        normalized_search = unicodedata.normalize("NFC", search)
-        escaped_search = _escape_like(normalized_search)
-        pattern = f"%{escaped_search}%"
-        # Match folder_path too, so "kyoto" finds files under travel/kyoto/.
-        query = query.filter(or_(
-            File.title.ilike(pattern, escape="\\"),
-            File.folder_path.ilike(pattern, escape="\\"),
-        ))
+        raw_search = search
+        query = query.filter(
+            func.name_search_match(File.title, File.folder_path, search) == 1
+        )
     if favorite is not None:
         query = query.filter(File.is_favorite == favorite)
     if liked is not None:
@@ -704,7 +700,9 @@ def list_drive_files(
             File.liked_at.is_not(None) if liked else File.liked_at.is_(None)
         )
     if tag:
-        query = query.filter(File.tags.any(func.lower(Tag.name) == tag.lower()))
+        query = query.filter(
+            File.tags.any(func.name_search_casefold(Tag.name) == fold_case(tag))
+        )
     query = _apply_kind_filter(query, _normalize_kind(type))
     if trust == "unreviewed":
         # Not a tier: the review queue is "nobody has ruled on this", which
@@ -731,7 +729,7 @@ def list_drive_files(
 
     return PaginatedResponse(
         data=[
-            _to_response(f, match_source=_classify_match_source(f, normalized_search))
+            _to_response(f, match_source=_classify_match_source(f, raw_search))
             for f in files
         ],
         meta=PaginationMeta(total=total, page=page, limit=limit),
@@ -770,20 +768,20 @@ def get_drive_file_by_path(
     return _to_response(file)
 
 
-def _classify_match_source(file_obj, normalized_search: str | None) -> str | None:
-    if not normalized_search:
+def _classify_match_source(file_obj, raw_search: str | None) -> str | None:
+    if not raw_search:
         return None
-    needle = normalized_search.casefold()
-    in_title = needle in (file_obj.title or "").casefold()
-    in_path = needle in (file_obj.folder_path or "").casefold()
+    in_title = name_matches(file_obj.title, "", raw_search)
+    in_path = name_matches("", file_obj.folder_path, raw_search)
     if in_title and in_path:
         return "both"
+    if in_title:
+        return "filename"
     if in_path:
         return "path"
-    # default: filename. The SQL OR guarantees a match in title or path,
-    # but the casefold substring check may diverge from SQL ilike in edge cases
-    # (e.g. Unicode equivalence differences) — this also acts as a safety net.
-    return "filename"
+    if name_matches(file_obj.title, file_obj.folder_path, raw_search):
+        return "both"
+    return None
 
 
 @router.get("/{drive_name}/tags", response_model=list[TagResponse])

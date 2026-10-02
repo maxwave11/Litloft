@@ -428,6 +428,89 @@ class TestListDriveFiles:
         assert len(items) == 1
         assert items[0]["title"] == "50% off sale"
 
+    @pytest.mark.parametrize(
+        "title,folder_path,search,expected_source",
+        [
+            (
+                "Самые ЧАСТЫЕ ОШИБКИ В ПЛАНИРОВКАХ",
+                "uploads",
+                "самые частые ошибки",
+                "filename",
+            ),
+            ("House plans", "Architect/Vitaly", "vitaly", "path"),
+            ("Travel archive", "Travel/notes", "travel", "both"),
+            ("House plans", "Architect/Vitaly", "vitaly plans", "both"),
+        ],
+    )
+    def test_search_uses_folded_words_and_reports_source(
+        self, client, title, folder_path, search, expected_source
+    ):
+        from app.models import File
+
+        c, db, drive_dir, data_dir = client
+        folder = drive_dir / folder_path
+        folder.mkdir(parents=True)
+        (folder / "result.mp4").write_bytes(b"x")
+        db.add(
+            File(
+                filename="result.mp4",
+                title=title,
+                drive=TEST_DRIVE,
+                folder_path=folder_path,
+                file_path=f"{folder_path}/result.mp4",
+                file_size=1,
+                file_type="video",
+                mime_type="video/mp4",
+            )
+        )
+        db.commit()
+
+        res = c.get(
+            f"/api/drives/{TEST_DRIVE}/files",
+            params={"search": search},
+        )
+
+        assert res.status_code == 200
+        assert [(item["title"], item["match_source"]) for item in res.json()["data"]] == [
+            (title, expected_source)
+        ]
+
+    @pytest.mark.parametrize(
+        "stored_tag,query_tag,expected_titles",
+        [
+            ("Дом", "дом", ["Tagged file"]),
+            ("c++", "c", []),
+        ],
+    )
+    def test_tag_filter_uses_unicode_casefold_without_stripping_punctuation(
+        self, client, stored_tag, query_tag, expected_titles
+    ):
+        from app.models import File, Tag
+
+        c, db, drive_dir, data_dir = client
+        (drive_dir / "tagged.mp4").write_bytes(b"x")
+        file = File(
+            filename="tagged.mp4",
+            title="Tagged file",
+            drive=TEST_DRIVE,
+            folder_path="",
+            file_path="tagged.mp4",
+            file_size=1,
+            file_type="video",
+            mime_type="video/mp4",
+        )
+        file.tags.append(Tag(name=stored_tag, drive=TEST_DRIVE))
+        db.add(file)
+        db.commit()
+
+        res = c.get(
+            f"/api/drives/{TEST_DRIVE}/files",
+            params={"tag": query_tag},
+        )
+
+        assert res.status_code == 200
+        assert [item["title"] for item in res.json()["data"]] == expected_titles
+
     def test_sort(self, client):
         c, db, drive_dir, data_dir = client
         _seed(db, drive_dir)
