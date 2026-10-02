@@ -6,6 +6,7 @@ from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 logger = logging.getLogger(__name__)
 
 import app.config as config
+import app.services.name_search as _name_search
 
 
 class Base(DeclarativeBase):
