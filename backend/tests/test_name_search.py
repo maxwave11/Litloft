@@ -39,6 +39,7 @@ def test_name_match_table(title, folder_path, query, expected):
     [
         "Самые ЧАСТЫЕ ОШИБКИ",
         "alpha—beta_gamma",
+        "Cafe\u0301",
         "旅行のメモ",
     ],
 )

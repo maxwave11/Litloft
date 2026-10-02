@@ -18,14 +18,16 @@ def fold(value: str | None) -> str:
 
 
 @lru_cache(maxsize=512)
-def parse_query(query: str) -> tuple[tuple[str, ...], str]:
+def parse_query(query: str) -> tuple[tuple[str, ...], str, str]:
     folded = fold(query)
-    return tuple(folded.split()), fold_case(query)
+    return tuple(folded.split()), fold_case(query), query.casefold()
 
 
 def name_matches(title: str | None, folder_path: str | None, query: str) -> bool:
-    words, literal = parse_query(query)
+    words, literal, raw_literal = parse_query(query)
     combined = f"{title or ''} {folder_path or ''}"
+    if raw_literal in combined.casefold():
+        return True
     if words:
         haystack = fold(combined)
         return all(word in haystack for word in words)
