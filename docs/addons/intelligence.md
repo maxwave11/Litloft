@@ -616,7 +616,7 @@ Whisper, BLIP and the tag vocabulary model are unloaded after this many idle sec
 - **Ask** in the sidebar, with the **Ask** and **Find** tabs.
 - Sections on the file page, each shown once it has something in it: **Do you trust this source?**, **AI tag candidates**, **AI chapter candidates**, **AI summary**, **AI detailed summary**, **AI image description**, **Visual index**, **CLIP Frames**.
 - **AI** button in the file's action row. It lists what the file does not have yet (tag candidates, a summary, a detailed summary, chapter candidates, an image description). It is hidden when there is nothing left to create.
-- **Transcript** tab in the inspector, for files that have a transcript. It has **Clean up with AI**, a switch between **Text chunks**, **Words** and **External** when there is more than one source, and a button on each line that adds it to the capture basket. Where it sits: [chapters and the transcript](../user-guide/viewers-and-players.md#chapters-and-the-transcript-beside-or-below).
+- **Transcript** tab in the inspector, for files that have a transcript. **Copy transcript** copies the current source either as plain text or with a timestamp at the start of every line. The tab also has **Clean up with AI**, a switch between **Text chunks**, **Words** and **External** when there is more than one source, and a button on each line that adds it to the capture basket. Where it sits: [chapters and the transcript](../user-guide/viewers-and-players.md#chapters-and-the-transcript-beside-or-below).
 - **Similar files** under the inspector's **Related** tab. It searches only when you expand it, and each result shows keywords it shares with the current file.
 - **Pickup** on the drive home.
 - **Index details** in the file's `…` menu (see below).
