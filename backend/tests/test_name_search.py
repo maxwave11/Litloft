@@ -27,6 +27,8 @@ def _name_search():
         ("旅行のメモ", "", "旅行", True),
         ("House plans", "architect/Vitaly", "vitaly plans", True),
         ("Cafe\u0301", "", "café", True),
+        ("a\u0323\u0301", "", "\u0301\u0323", True),
+        ("CAFE\u0301", "", "cafe", True),
         ("House plans", "architect/Vitaly", "garden plans", False),
     ],
 )
