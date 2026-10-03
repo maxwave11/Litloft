@@ -5,7 +5,7 @@
  * a page reload (reload completes whatever autosave was pending).
  */
 
-export type DirtySource = "knowledge-editor" | "comment" | "tag-chips";
+export type DirtySource = "knowledge-editor" | "comment" | "tag-chips" | "user-summary";
 
 interface DirtyEntry {
   fileId: string;

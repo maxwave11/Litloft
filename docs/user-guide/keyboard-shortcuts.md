@@ -34,6 +34,13 @@ The search window also has a **Keyboard Shortcuts** button along its bottom edge
 | `Cmd/Ctrl+Enter` | Save the note |
 | `Esc` | Close the panel (asks first if there is unsaved text) |
 
+### Summary of a video or audio file
+
+| Key | Action |
+|---|---|
+| `Cmd/Ctrl+Enter` | Save the summary |
+| `Esc` | Stop editing, when nothing has been changed |
+
 ## File browsing
 
 In the Library and in folders, not on Home.

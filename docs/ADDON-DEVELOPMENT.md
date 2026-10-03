@@ -1253,7 +1253,7 @@ Slot entries each addon declares, for reference when designing your own.
 | `intelligence` | `file-detail-sections` | `unverified-source`, `suggested-tags`, `suggested-chapters`, `summary`, `detailed-summary`, `visual-description`, `visual-index`, `clip-frames` |
 | `intelligence` | `file-relations` | `similar-files` |
 | `intelligence` | `player-side` | `transcript` |
-| `intelligence` | `file-detail-reading` | `readable-transcript` |
+| `intelligence` | `file-detail-reading` | `reading` |
 | `intelligence` | `file-detail-actions` | `file-ai-actions` |
 | `intelligence` | `file-actions-menu` | `index-details` |
 | `intelligence` | `folder-bulk-actions-menu` | `folder-ai-actions` |
