@@ -47,10 +47,13 @@ On video, audio and `.loft` files, a button in the page row decides where the ch
 
 The button appears only when the file has chapters or a transcript. On a phone both always go into the bottom sheet. The choice is remembered on the device.
 
-Whichever you choose, a video or audio file also ends with two tabs:
+Whichever you choose, a video or audio file also ends with a row of tabs:
 
 - **Transcript by chapter**, on a transcribed file: the whole transcript as plain text with no timestamps, under a heading for each chapter (one block, when the file has no chapters). **Copy** puts it on the clipboard as Markdown, with the file's title at the top, ready to paste into an AI assistant for a summary.
-- **Summary**: where that summary goes. **Add summary** or **Edit** opens a Markdown text box; **Save** (or Ctrl+Enter) shows it formatted. Saving an empty box removes the summary. When a file has a summary, this tab opens first.
+- One tab for each summary you added, named by its title (for example a short one and a detailed one). **Edit** opens its title and a Markdown text box; **Save** (or Ctrl+Enter) shows it formatted. Saving an empty box removes the summary.
+- **Add summary**: a title and a Markdown box for another summary.
+
+When a file has summaries, the first one opens first.
 
 ## Chapters
 
