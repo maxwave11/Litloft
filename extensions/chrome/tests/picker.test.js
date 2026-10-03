@@ -59,7 +59,7 @@ test("An inaccessible operation shows an access error without retrying the impor
   let imports = 0;
   const controller = createPickerController({ video: { id: "dQw4w9WgXcQ" }, render: (s) => { state = structuredClone(s); }, send: async (request) => {
     if (request.type === "bootstrap") return { drives: [{ name: "drive" }], generation: "g1" };
-    if (request.type === "import") { imports++; return { operation: null }; }
+    if (request.type === "import") { imports++; throw new Error("unavailable"); }
     if (request.type === "status") return { operation: null };
     return { folders: [] };
   } });

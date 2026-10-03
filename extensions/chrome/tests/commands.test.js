@@ -72,8 +72,8 @@ test("Locking a drive hides saved operation details across all picker commands",
         return result;
       };
     }
-    const initial = await f.run(f.request, f.sender);
-    if (timing === "during") assert.equal(initial.operation, null);
+    if (timing === "during") await assert.rejects(f.run(f.request, f.sender), /unavailable/);
+    else await f.run(f.request, f.sender);
     f.api.drives = async () => drives;
     const boot = await f.run({ ...f.request, type: "bootstrap" }, f.sender);
     const status = await f.run({ ...f.request, type: "status" }, f.sender);
@@ -82,8 +82,7 @@ test("Locking a drive hides saved operation details across all picker commands",
     assert.equal(boot.operation, null);
     assert.equal(status.operation, null);
     if (drives.length) {
-      const selection = await f.run({ ...f.request, drive: "Public", folder: "" }, f.sender);
-      assert.equal(selection.operation, null);
+      await assert.rejects(f.run({ ...f.request, drive: "Public", folder: "" }, f.sender), /unavailable/);
       assert.equal(f.calls.length, 1);
     }
   }

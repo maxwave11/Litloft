@@ -9,6 +9,13 @@ test("Both interfaces reserve one active import, including reopening the UI", as
   const [a, b] = await Promise.all([operations.reserve(context), operations.reserve(context)]);
   assert.equal([a, b].filter((o) => o.created).length, 1);
   assert.equal(a.operation.id, b.operation.id);
+  for (const repeatId of [undefined, a.operation.id]) {
+    for (const destination of [context, { ...context, drive: "another", folder: "nested" }]) {
+      const pending = await operations.reserve(destination, repeatId);
+      assert.equal(pending.created, false);
+      assert.equal(pending.operation.id, a.operation.id);
+    }
+  }
   await operations.finish(a.operation.id, { state: "success", fileId: "f1", filename: "video.loft" });
   const reopened = await operations.reserve(context);
   assert.equal(reopened.created, false);

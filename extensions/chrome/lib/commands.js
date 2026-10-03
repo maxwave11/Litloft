@@ -33,9 +33,14 @@ export function createCommands({ chromeApi, settings, operations, apiFactory = c
       fileUrl: record.fileId ? fileUrl(record.origin, record.drive, record.folder, record.fileId) : null,
     };
   }
-  async function checkDrive(api, drive) {
+  async function requireDrive(api, drive) {
     validateDrive(drive);
-    if (!(await api.drives()).some((entry) => entry.name === drive)) throw new Error("unavailable");
+    const drives = await api.drives();
+    if (!drives.some((entry) => entry.name === drive)) throw new Error("unavailable");
+    return drives;
+  }
+  async function checkDrive(api, drive) {
+    await requireDrive(api, drive);
     if (!await api.availability(drive)) throw new Error("importUnavailable");
   }
   async function checkFolder(api, drive, folder) {
@@ -90,7 +95,7 @@ export function createCommands({ chromeApi, settings, operations, apiFactory = c
     await checkFolder(api, drive, folder);
     await context(request, sender, caller, await settings.get());
     const reservation = await operations.reserve({ ...current, video: undefined, drive, folder }, request.repeatId);
-    if (!reservation.created) return { operation: presentOperation(reservation.operation, await api.drives()) };
+    if (!reservation.created) return { operation: presentOperation(reservation.operation, await requireDrive(api, reservation.operation.drive)) };
     let result;
     try {
       await context(request, sender, caller, await settings.get());
@@ -102,6 +107,6 @@ export function createCommands({ chromeApi, settings, operations, apiFactory = c
     }
     const finished = await operations.finish(reservation.operation.id, result);
     if (finished.state === "success") await settings.remember(config, { drive, folder }).catch(() => {});
-    return { operation: presentOperation(finished, await api.drives()) };
+    return { operation: presentOperation(finished, await requireDrive(api, finished.drive)) };
   };
 }
