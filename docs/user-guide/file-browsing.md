@@ -63,7 +63,9 @@ A folder that is almost all images lays out each picture at its own shape, in ro
 
 ### Selecting several files
 
-Turn on **Select mode** from `…`, or `Cmd/Ctrl+click` a card. `Shift+click` selects a range. The bar at the bottom offers tag, rename, add to collection, copy, cut, move, and move to trash. Dragging any selected file moves the whole selection.
+Turn on **Select mode** from `…`, or `Cmd/Ctrl+click` a card. `Shift+click` selects a range. The bar at the bottom offers tag, rename, add to collection, export as Markdown, copy, cut, move, and move to trash. Dragging any selected file moves the whole selection.
+
+**Export as Markdown** turns the selected videos into one document to copy into an AI assistant. Each video gets a heading and a line with its length, the date it was added and its tags, followed by what your installed addons know about it, such as its transcript by chapter. A video none of them has anything for is left out. If anything is missing, you are told before the document appears and can continue or cancel. **Select all** takes only the files loaded so far, so scroll to the end of a long list first. An export holds at most 200 videos.
 
 ## Creating a new file
 

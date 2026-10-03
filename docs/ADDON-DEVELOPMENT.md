@@ -753,6 +753,7 @@ trustReviewedAt, onFileChange }` plus what its row lists.
 | `file-actions-menu` | The file page's `[...]` menu | File props plus `onRequestClose`, `onDialogOpenChange`. See [Contributing to the file actions menu](#contributing-to-the-file-actions-menu) |
 | `folder-actions-menu` | The folder toolbar's **Add** menu, below the core rows | See [Contributing to the add menu](#contributing-to-the-add-menu) |
 | `folder-bulk-actions-menu` | The folder toolbar's `…` menu, below the core rows. Only on a folder or the drive root | See [Contributing to the folder `…` menu](#contributing-to-the-folder--menu) |
+| `markdown-export-sections` | Mounted invisibly by the selection bar's **Export as Markdown** dialog | `{ drive }`. Entries render `null` and offer a section provider. See [Contributing to the Markdown export](#contributing-to-the-markdown-export) |
 | `document-viewer-actions` | Top bar of the full-screen PDF viewer | File props plus `documentCaptureController` and `tone: "on-dark"`. The bar is black: draw a transparent control with a white glyph. The controller publishes the page in view or the selected text, never an anchor |
 | `header-actions` | App header | `{ drive }` |
 | `active-summary-view` | File detail, with the summaries | `{ fileId, drive, summaryNote }`. Drawn only when `GET /api/addons/knowledge/file_active_summary/{id}/note` reports an active summary; without an entry the core draws the note itself |
@@ -995,6 +996,59 @@ into the folder; this one acts on the files already listed.
 The slot is shown only on a folder or the drive root, not on search results,
 a tag filter or a special view. Return `null` when there is nothing to act on;
 the separator goes with it.
+
+### Contributing to the Markdown export
+
+**Export as Markdown** in the selection bar builds one document from the
+selected videos: a table of contents, then for each video a metadata line and
+the sections addons offer. The core owns the dialog, the document and the
+warning; an addon only offers what it knows about its own data, through
+`@/lib/exportSections`.
+
+`markdown-export-sections` is mounted once, invisibly, by the dialog with
+`{ drive }`. Its entries render `null` and offer a provider while mounted:
+
+```tsx
+import { useMemo } from "react";
+import { useOfferExportSection } from "@/lib/exportSections";
+
+export default function YourExportSection() {
+  const provider = useMemo(() => ({
+    id: "your-entry-id",   // the slot entry's own id
+    label: t("sectionTitle"),
+    order: 30,
+    preamble: t("legend"), // optional
+    build: async (file, drive, signal) => { /* ... */ },
+  }), [t]);
+  useOfferExportSection(provider);
+  return null;
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `id` | **Must equal the id of the slot entry that offers it.** The dialog compares the slot's entries with the offered providers by id: it waits for each entry to offer one, and names a late or silent entry in the warning. |
+| `label` | Already translated. The section is written under `### <label>`. |
+| `order` | Ascending; ties fall back to `id`. |
+| `preamble` | Optional text written once under the document title, only when this provider produced a section, such as the key to tags its section uses. It is not the place for notes about what is missing. |
+| `build(file, drive, signal)` | Called once per selected video or audio file, up to four files at a time. Resolves one of the results below. A rejection counts as a failure to load. Pass `signal` to every request; closing the dialog aborts it. |
+
+| Result | Use it when |
+|---|---|
+| `{ kind: "section", markdown }` | There is content. Write the body only; the core writes the heading. Start the body's own headings at `####`. |
+| `{ kind: "empty" }` | The provider applies to this file and has nothing for it yet. The viewer is warned. |
+| `{ kind: "not-applicable" }` | It never applies to this file, such as comments on a file that is not a `.loft`. This is not a gap and is never warned about. |
+
+- Build from what is already stored. An export must not queue generation or
+  fetch from an outside service; answer `empty` instead.
+- Neutralise text a stranger wrote before putting it in a body, as the
+  YouTube comments section does for its role tags.
+- The core adds the title, the contents list, each video's heading and its
+  metadata line (duration, the date it was added, tags, and the link to the
+  original for a `.loft`). A video with no section from any provider is left
+  out of the document, and the viewer is warned before the document is shown.
+- Keep `provider` stable between renders (`useMemo`): a new object withdraws
+  and offers it again.
 
 ### Declaring slots
 
