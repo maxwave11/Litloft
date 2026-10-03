@@ -609,3 +609,19 @@ Markdown.** The role tag cannot be forged, but a name such as
 `@bob · 99 likes · pinned` reads as facts, and the video title is not
 neutralised in the heading either. Reached by copying the comments of a video
 whose commenter chose such a name.
+
+**A page left open on a file that has gone for good keeps asking.** After the
+file is trashed, purged or its drive is locked, the Comments tab keeps its last
+page, and if that was "Loading comments…" it polls every 10 seconds for as long
+as the page stays open. Reached by leaving the page open while the file is
+deleted during a fetch; reloading or leaving ends it.
+
+**A stale answer can show Load comments for a fetch that is queued.** Reads are
+not sequenced, so a slow earlier "not loaded" answer can arrive after a newer
+"queued" one and stay until the next update on the drive. Reached by opening a
+video's page during its import; the end of the fetch corrects it.
+
+**A Comments tab that shows comments never learns that a refresh was started
+elsewhere.** A page on a loaded snapshot re-reads only on its own press, so a
+refresh from another tab or another viewer shows after a reload. Reached with
+two tabs open on one video.
