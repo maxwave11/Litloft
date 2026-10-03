@@ -1,5 +1,7 @@
 # intelligence addon
 
+Video cards in Grid, List, Watch and file detail show transcript and summary indicators in their metadata line: green means available, muted gray means absent or unavailable, and yellow with a gentle fade means queued or processing. Errors appear red; hover an icon for its name and state. Manual summaries count as available. Generated summary indicators respect the drive's enabled features. Updates are batched and refreshed while cards remain visible.
+
 The `intelligence` addon adds meaning-based search, Ask (question answering over your files), transcripts, summaries, tag and chapter candidates, and image descriptions. It runs as its own container (port 8100) and keeps its data under `data/addons/intelligence/`.
 
 ## What it provides

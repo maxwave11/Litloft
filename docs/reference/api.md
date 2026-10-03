@@ -289,6 +289,14 @@ Channel history import: the media_import addon exposes drive-scoped `POST` and `
 
 The media_import addon exposes drive-scoped `GET /api/addons/media_import/link/{file_id}/comments`, the saved comments of a YouTube `.loft`, and `POST /api/addons/media_import/link/{file_id}/comments/refresh`, which queues a fetch and answers `202` with `{ "status": "queued" }` or `{ "status": "already_queued" }`. The response fields and the errors are in [Media Import](../addons/media-import.md#youtube-comments).
 
+## Addon video card metadata
+
+`POST /api/addons/intelligence/files/card-metadata` and `POST /api/addons/media_import/link/card-metadata` accept `{ "file_ids": ["id", "..."] }` (1–100 IDs), require the current `X-Lit-Drive`, and return an object keyed by accessible active file IDs. Other-drive, missing and inactive files are omitted. Intelligence returns only indexed files and respects drive feature policy; an unavailable index feature returns `{}`.
+
+Intelligence entries contain `transcript` and `summary`, with values `ready`, `missing`, `working`, `error` or `unknown`. Transcript readiness is based on stored chunks or words; queued or running transcription is `working`. Summaries include active manual summaries and enabled generated summaries; queued/running generation takes precedence over an existing summary. Disabled generated features do not expose their saved status.
+
+Media Import entries contain `channel` (nullable string), `captions_downloaded` (boolean) and `comments` (status, or `null` for sources without comment support). A successful comments snapshot is `ready` even when it contains zero comments. Queued/running refresh is `working`, a failed first fetch is `error`, and an unfetched supported source is `missing`. The endpoints return saved metadata without contacting the video provider.
+
 ## WebSocket
 
 `/api/ws`. See [WebSocket events](websocket-events.md).

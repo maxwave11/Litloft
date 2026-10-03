@@ -1,4 +1,9 @@
 {
+  "mediaIndicators": {
+    "transcript": "Transcript", "summary": "Summary", "comments": "Comments",
+    "ready": "Loaded", "missing": "Not added", "working": "Loading",
+    "error": "Loading failed", "unknown": "Status unavailable"
+  },
   "common": {
     "close": "Close",
     "back": "Back",

@@ -38,6 +38,8 @@
   --accent-cta: #d63031;
   --accent-teal: #103c25;
   --accent-amber: #78350f;
+  --media-ready: #24734d;
+  --media-loading: #a67c00;
   /* The player's progress indicator sits on the picture, not on a themed
      surface, so dark mode takes white rather than the coral accent. */
   --player-indicator: var(--accent);
@@ -76,6 +78,8 @@
   --accent-cta: #e85d5e;
   --accent-teal: #4caf80;
   --accent-amber: #f4c674;
+  --media-ready: #6ed4a0;
+  --media-loading: #f4c674;
   --player-indicator: #ffffff;
   --sand: #3d2023;
   --sand-hover: #4a2a2e;
@@ -1344,6 +1348,26 @@ main[data-canvas-floor="true"] .media-detail-player > :first-child {
 .related-files-host {
   container-type: inline-size;
   container-name: related-files;
+}
+
+.media-indicator {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+.media-indicator-ready { color: var(--media-ready); }
+.media-indicator-working { color: var(--media-loading); }
+.media-indicator-error { color: var(--danger); }
+.media-indicator-missing,
+.media-indicator-unknown { opacity: 0.4; }
+.media-indicator-working svg { animation: media-loading-fade 1.8s ease-in-out infinite; }
+@keyframes media-loading-fade {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .media-indicator-working svg { animation: none; }
 }
 
 .related-files-grid {

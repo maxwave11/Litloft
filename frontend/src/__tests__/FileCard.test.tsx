@@ -126,7 +126,7 @@ describe("FileCard", () => {
 
 describe("what a card says first", () => {
   const meta = (container: HTMLElement) =>
-    container.querySelector(".mt-1")?.textContent ?? "";
+    container.querySelector("[data-file-meta]")?.textContent ?? "";
 
   it("leaves the size off a video — the badge already says the length", () => {
     // A `.loft` reference file's row carries the pointer's size.
@@ -191,7 +191,7 @@ describe("every host draws the same card", () => {
   const video = makeFile({ file_type: "video", duration: 1140, file_size: 83 });
 
   const noSizeButDated = (container: HTMLElement) => {
-    const meta = container.querySelector(".mt-1")?.textContent ?? "";
+    const meta = container.querySelector("[data-file-meta]")?.textContent ?? "";
     expect(meta).not.toContain("83 B");
     expect(meta.trim()).not.toBe("");
   };

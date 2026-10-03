@@ -191,6 +191,10 @@ A subscription's details show its schedule, destination and imported items, with
 | **The comments could not be loaded** | Another failure. Check `docker compose logs backend`, then press **Refresh**. |
 | A subscription shows **Backoff active** | Listing the channel's videos is failing. Check `docker compose logs backend`; if the provider is down, wait. |
 
+## Video card indicators
+
+Video cards show the saved channel name and a comments icon alongside the transcript and summary indicators. The icons have no background. Green comments means a successful fetch, including a snapshot with zero comments; faded gray means not fetched, yellow fading means queued or fetching, and red means the first fetch failed. An existing successful snapshot remains green after a failed refresh. Sources without comment support omit that icon. Channel names truncate in narrow cards. View and video-like counts are not currently stored or displayed.
+
 ## See also
 
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp) for supported sites.

@@ -7,6 +7,7 @@ import type { FileItem } from "@/types";
 import { FileActionRow } from "./FileActionRow";
 import { FileDescription } from "./FileDescription";
 import { MetadataEditor } from "./MetadataEditor";
+import { FileMetadataSlots } from "../FileMetadataSlots";
 
 interface FileMetaBlockProps {
   file: FileItem;
@@ -70,9 +71,11 @@ export function FileMetaBlock({
       ) : (
         <div>
           <h1 className="text-xl font-bold text-text-primary">{file.title}</h1>
-          {metaLine !== null && (
-            <div className="mt-1 text-xs text-text-muted">{metaLine}</div>
-          )}
+          <div className="mt-0.5 flex items-center gap-1.5 text-xs text-text-muted">
+            <FileMetadataSlots fileId={file.id} drive={file.drive} filename={file.filename} fileType={file.file_type} part="metadata" />
+            {metaLine !== null && <span>{metaLine}</span>}
+            <FileMetadataSlots fileId={file.id} drive={file.drive} filename={file.filename} fileType={file.file_type} part="indicators" />
+          </div>
           {!hoistDescription && (
             <FileDescription
               file={file}

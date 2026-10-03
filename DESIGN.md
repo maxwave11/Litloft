@@ -256,6 +256,8 @@ There is no `[data-theme="system"]`. A stored `system` is resolved to `light` or
 - **`--text-muted`**: keep contrast readable; do not reduce opacity beyond
   legibility.
 - Never rely on colour alone to convey state — pair with an icon or text.
+
+Video metadata uses 16px outline icons for transcript (`Captions`), summary (`FileText`) and comments (`MessagesSquare`), aligned right in the existing metadata line with a 6px gap. There is no background, corner badge or extra row. The title-to-metadata gap is 2px. Names and states are available in the accessible label and tooltip. Ready uses `--media-ready` (`#24734d` light / `#6ed4a0` dark); loading uses `--media-loading` (`#a67c00` light / `#f4c674` dark) with a 1.8s opacity fade from 1 to .25 and back. Missing or unknown uses muted text at .4 opacity, errors use `--danger`. Reduced-motion preference disables the fade. Long channel names truncate to preserve the icons and date.
 - **`<mark>`'s UA default is reset globally** so utilities apply to it; inside
   `.markdown-body`, `--highlight-bg` wins. The reset lives in `@layer base`: an
   unlayered rule beats every utility regardless of specificity.

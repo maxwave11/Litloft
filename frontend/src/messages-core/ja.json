@@ -1,4 +1,9 @@
 {
+  "mediaIndicators": {
+    "transcript": "文字起こし", "summary": "要約", "comments": "コメント",
+    "ready": "読み込み済み", "missing": "未追加", "working": "読み込み中",
+    "error": "読み込み失敗", "unknown": "状態を取得できません"
+  },
   "common": {
     "close": "閉じる",
     "back": "戻る",

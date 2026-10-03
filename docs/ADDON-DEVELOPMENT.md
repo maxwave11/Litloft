@@ -747,6 +747,8 @@ trustReviewedAt, onFileChange }` plus what its row lists.
 | `file-detail-reading` | The last block of the canvas of a video or audio file, below the description and the summaries | File props plus `chaptersVersion`, which changes when the file's chapters are replaced. For a long read that follows the player, not a panel beside it |
 | `file-preview-actions` | Under the media player, right-aligned | File props. Inline buttons |
 | `loft-metadata` | Beside the player, `.loft` (external URL) files only | `{ fileId, drive }` |
+| `file-card-metadata` | Left of the compact metadata line in Grid, List and file detail | `{ fileId, drive, filename, fileType }`. Currently offered for `.loft` files. Inline, truncatable text; render nothing when unavailable |
+| `file-card-indicators` | Right of that metadata line, also in Watch cards | Same props. Offered for videos and `.loft` files. Use core `MediaIndicator` with `transcript`, `summary` or `comments` and a `MediaStatus`. No buttons or links: listing hosts may already be inside a link. No background, padding or extra line |
 | `file-detail-actions` | The file page's action row, before the `[...]` menu | File props. See [Contributing to the file action row](#contributing-to-the-file-action-row) |
 | `file-actions-menu` | The file page's `[...]` menu | File props plus `onRequestClose`, `onDialogOpenChange`. See [Contributing to the file actions menu](#contributing-to-the-file-actions-menu) |
 | `folder-actions-menu` | The folder toolbar's **Add** menu, below the core rows | See [Contributing to the add menu](#contributing-to-the-add-menu) |
@@ -760,6 +762,8 @@ trustReviewedAt, onFileChange }` plus what its row lists.
 | `dashboard-alerts` | Admin dashboard, above the drive cards | No props. For something an operator must see first. Render nothing when nothing is wrong: the host draws no wrapper |
 | `admin-settings-sections` | **Settings** → **System** tab, after the core sections | No props |
 | `admin-intelligence-sections` | **Settings** → **Intelligence** tab. The tab exists only while this slot has entries | No props |
+
+For card metadata, `createFileMetadataStore` from `@/lib/fileMetadataStore` shares snapshots between mounted consumers, batches up to 100 IDs per drive, and refreshes on file events, window focus and every ten seconds while mounted. Each addon owns its endpoint and statuses; core only provides layout and presentation. Keep drive context in every request and omit inaccessible IDs from batch responses.
 
 ### Naming a slot entry in the reader's language
 
