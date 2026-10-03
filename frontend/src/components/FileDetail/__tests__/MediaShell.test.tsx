@@ -287,6 +287,22 @@ describe("document viewers bleed to the canvas edges", () => {
   });
 });
 
+describe("the reading section at the end of the canvas", () => {
+  it.each([
+    ["a video", { file_type: "video", mime_type: "video/mp4" }, true],
+    ["an audio file", { file_type: "audio", mime_type: "audio/mpeg" }, true],
+    ["an image", { file_type: "image", mime_type: "image/jpeg" }, false],
+    ["a PDF", { file_type: "document", mime_type: "application/pdf" }, false],
+  ] as const)("is offered for %s: %s", async (_name, kind, offered) => {
+    const { container } = await renderMediaAwaitingChrome(makeFile({ has_chapters: false, ...kind }));
+    const slot = screen.queryByTestId("addon-slot-file-detail-reading");
+    expect(slot !== null).toBe(offered);
+    if (slot) {
+      expect(container.querySelector(".media-detail-host")!.lastElementChild!.contains(slot)).toBe(true);
+    }
+  });
+});
+
 describe("an occupant with nothing for this file", () => {
   it("loses its tab but not its mount", async () => {
     withTranscript();

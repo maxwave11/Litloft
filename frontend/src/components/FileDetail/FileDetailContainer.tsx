@@ -196,6 +196,7 @@ export function FileDetailContainer({
     fileId,
     drive,
     filename: file.filename,
+    title: file.title || file.filename,
     videoRef,
     mediaController,
     subtitles: file.subtitles,

@@ -732,8 +732,8 @@ entries renders nothing.
 ### Available slots
 
 Every file-page slot (`file-detail-sections`, `file-detail-actions`,
-`file-actions-menu`, `file-relations`, `player-side`, `file-preview-actions`)
-receives `{ fileId, drive, filename, fileType, mimeType, videoRef,
+`file-actions-menu`, `file-relations`, `player-side`, `file-detail-reading`,
+`file-preview-actions`) receives `{ fileId, drive, filename, title, fileType, mimeType, videoRef,
 mediaController, subtitles, documentCaptureController, trustTier,
 trustReviewedAt, onFileChange }` plus what its row lists.
 
@@ -744,6 +744,7 @@ trustReviewedAt, onFileChange }` plus what its row lists.
 | `file-detail-sections` | File detail inspector, **Info** tab | File props. The entries with id `detailed-summary` and `knowledge-edit` are placed outside the tab by the core (the canvas or the sheet). Not for a transcript (`player-side`) or derived relations (`file-relations`); an entry in two slots renders twice |
 | `file-relations` | Inspector **Related** tab, after the core's own relation lists | File props. See [below](#contributing-to-the-related-tab) |
 | `player-side` | Beside a media player as an inspector tab, or in a box under the description, as the viewer chooses | File props plus `fillHeight`, `labelledByHost`, `onAvailability`. See [Occupying the player-side slot](#occupying-the-player-side-slot) |
+| `file-detail-reading` | The last block of the canvas of a video or audio file, below the description and the summaries | File props plus `chaptersVersion`, which changes when the file's chapters are replaced. For a long read that follows the player, not a panel beside it |
 | `file-preview-actions` | Under the media player, right-aligned | File props. Inline buttons |
 | `loft-metadata` | Beside the player, `.loft` (external URL) files only | `{ fileId, drive }` |
 | `file-detail-actions` | The file page's action row, before the `[...]` menu | File props. See [Contributing to the file action row](#contributing-to-the-file-action-row) |
@@ -1252,6 +1253,7 @@ Slot entries each addon declares, for reference when designing your own.
 | `intelligence` | `file-detail-sections` | `unverified-source`, `suggested-tags`, `suggested-chapters`, `summary`, `detailed-summary`, `visual-description`, `visual-index`, `clip-frames` |
 | `intelligence` | `file-relations` | `similar-files` |
 | `intelligence` | `player-side` | `transcript` |
+| `intelligence` | `file-detail-reading` | `readable-transcript` |
 | `intelligence` | `file-detail-actions` | `file-ai-actions` |
 | `intelligence` | `file-actions-menu` | `index-details` |
 | `intelligence` | `folder-bulk-actions-menu` | `folder-ai-actions` |

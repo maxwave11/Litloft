@@ -47,6 +47,8 @@ On video, audio and `.loft` files, a button in the page row decides where the ch
 
 The button appears only when the file has chapters or a transcript. On a phone both always go into the bottom sheet. The choice is remembered on the device.
 
+Whichever you choose, a transcribed video or audio file also ends with **Transcript by chapter**: the whole transcript as plain text with no timestamps, under a heading for each chapter (one block, when the file has no chapters). **Copy** puts it on the clipboard as Markdown, with the file's title at the top, ready to paste into an AI assistant for a summary.
+
 ## Chapters
 
 Click a chapter to jump to it. The chapter you are in is highlighted, and collapsing the list leaves just its name.

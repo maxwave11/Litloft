@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 
+import { AddonSlot } from "../AddonSlot";
 import { ChaptersPanel } from "../ChaptersPanel";
 import { FileDescription } from "./FileDescription";
 import { MediaPlayerBlock, type MediaPlayerBlockProps } from "./MediaPlayerBlock";
@@ -127,6 +128,19 @@ export function MediaCanvas({
       <div className="space-y-6 border-t border-bg-border pt-6 empty:hidden">
         {heavySummaries}
       </div>
+
+      {/* Last on the page: a long read that follows the player, the
+          description and the summaries. `empty:hidden` for the same reason
+          as above — an addon entry draws nothing until it has something. */}
+      {isTimedMedia && (
+        <div className="border-t border-bg-border pt-6 empty:hidden">
+          <AddonSlot
+            id="file-detail-reading"
+            layout="stack"
+            props={{ ...addonSlotProps, chaptersVersion }}
+          />
+        </div>
+      )}
     </div>
   );
 }
