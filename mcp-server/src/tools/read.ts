@@ -111,13 +111,13 @@ const listFolders: LitloftTool = {
 const searchFiles: LitloftTool = {
   name: "search_files",
   description:
-    "List and/or search files within a single drive. Set path (and leave search empty) to list files directly inside a specific folder; set search to require every query word in the title or folder path, in any order and ignoring case, spacing, and punctuation. Drives are a hard security boundary in Litloft; there is no cross-drive search.",
+    "List and/or search files within a single drive. Set path (and leave search empty) to list files directly inside a specific folder; set search to require every query word in the title or folder path, in any order and ignoring case. Spacing and punctuation separate words; a punctuation-only query is literal. Drives are a hard security boundary in Litloft; there is no cross-drive search.",
   inputSchema: {
     drive: z.string().describe("Drive name"),
     search: z
       .string()
       .optional()
-      .describe("All-word title/folder-path match, ignoring case, spacing, and punctuation"),
+      .describe("All-word title/folder-path match; case-insensitive, punctuation-only queries literal"),
     favorite: z.boolean().optional(),
     tag: z.string().optional(),
     type: z

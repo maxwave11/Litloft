@@ -479,6 +479,7 @@ class TestListDriveFiles:
         "stored_tag,query_tag,expected_titles",
         [
             ("Дом", "дом", ["Tagged file"]),
+            ("ｃ＋＋", "c++", ["Tagged file"]),
             ("c++", "c", []),
         ],
     )

@@ -28,7 +28,7 @@ With the Knowledge addon installed, opening the modal from a note's page narrows
 
 ## The search page
 
-The search page matches the title and the folder path, ignoring case, spacing and punctuation. Every word you type must occur, but the words can be in any order. A title starts as the filename without its extension, so you can search by filename. If you change a file's title, search sees the new title. Descriptions are not searched.
+The search page matches the title and the folder path, ignoring case. Spacing and punctuation separate words; every word you type must occur, but the words can be in any order. A query made only of punctuation is searched literally. A title starts as the filename without its extension, so you can search by filename. If you change a file's title, search sees the new title. Descriptions are not searched.
 
 Each result has a small badge saying where it matched, such as **Filename** or **Path**. **What the badges mean**, at the bottom of the search popup, explains them all.
 
