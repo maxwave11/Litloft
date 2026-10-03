@@ -4,6 +4,7 @@ import { useRef, useState, type ComponentType } from "react";
 import {
   Check,
   ClipboardCopy,
+  FileText,
   ListMusic,
   MoreHorizontal,
   Move,
@@ -26,6 +27,8 @@ import { ConfirmDialog } from "./ConfirmDialog";
 import { DismissScrim } from "./DismissScrim";
 import { MoveDialog } from "./MoveDialog";
 import { CollectionPicker } from "./CollectionPicker";
+import MarkdownExport from "./markdownExport";
+import type { FileItem } from "@/types";
 
 export interface BulkAction {
   id: string;
@@ -46,6 +49,8 @@ export interface BulkAction {
 interface SelectionBarProps {
   count: number;
   selectedIds: Set<string>;
+  /** The selected files in list order; without it there is nothing to export. */
+  selectedFiles?: readonly FileItem[];
   totalCount: number;
   drive: string;
   currentPath?: string;
@@ -69,6 +74,7 @@ export function groupSurvivesNarrow(
 export function SelectionBar({
   count,
   selectedIds,
+  selectedFiles,
   totalCount,
   drive,
   currentPath,
@@ -92,6 +98,7 @@ export function SelectionBar({
   const [tagging, setTagging] = useState(false);
   const [collectionPickerOpen, setCollectionPickerOpen] = useState(false);
   const [purgeOpen, setPurgeOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLButtonElement>(null);
 
@@ -219,6 +226,17 @@ export function SelectionBar({
           onClick: () => setCollectionPickerOpen(true),
           startsGroup: true,
         },
+        ...(selectedFiles
+          ? [
+              {
+                id: "export",
+                icon: FileText,
+                label: t("exportMarkdown"),
+                displayLabel: t("export"),
+                onClick: () => setExportOpen(true),
+              },
+            ]
+          : []),
         {
           id: "copy",
           icon: ClipboardCopy,
@@ -438,6 +456,14 @@ export function SelectionBar({
         onComplete={handleRenameComplete}
         onCancel={() => setRenameOpen(false)}
       />
+
+      {exportOpen && selectedFiles && (
+        <MarkdownExport
+          files={selectedFiles}
+          drive={drive}
+          onClose={() => setExportOpen(false)}
+        />
+      )}
     </>
   );
 }

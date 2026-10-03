@@ -707,6 +707,7 @@ export function FolderBrowser({
         <SelectionBar
           count={selection.count}
           selectedIds={selection.selectedIds}
+          selectedFiles={files.filter((f) => selection.selectedIds.has(f.id))}
           totalCount={files.length}
           drive={driveName}
           currentPath={folderPath}

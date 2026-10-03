@@ -43,9 +43,19 @@ vi.mock("../CollectionPicker", () => ({
     open ? <div data-testid="collection-picker" /> : null,
 }));
 
+vi.mock("../markdownExport", () => ({
+  default: ({ files, onClose }: any) => (
+    <div data-testid="markdown-export">
+      {files.map((f: { id: string }) => f.id).join(",")}
+      <button onClick={onClose}>close export</button>
+    </div>
+  ),
+}));
+
 const defaultProps = {
   count: 3,
   selectedIds: new Set(["f1", "f2", "f3"]),
+  selectedFiles: [{ id: "f1" }, { id: "f2" }, { id: "f3" }] as never,
   totalCount: 10,
   drive: "main",
   currentPath: "",
@@ -107,6 +117,24 @@ describe("SelectionBar", () => {
     expect(screen.getByTestId("move-dialog")).toBeInTheDocument();
   });
 
+  it("exports the selected files, in the order it was given them", () => {
+    const selectedFiles = [{ id: "f3" }, { id: "f1" }, { id: "f2" }] as never;
+    render(<SelectionBar {...defaultProps} selectedFiles={selectedFiles} />);
+    expect(screen.queryByTestId("markdown-export")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("Export as Markdown"));
+
+    expect(screen.getByTestId("markdown-export")).toHaveTextContent("f3,f1,f2");
+    fireEvent.click(screen.getByText("close export"));
+    expect(screen.queryByTestId("markdown-export")).not.toBeInTheDocument();
+    expect(defaultProps.onClear).not.toHaveBeenCalled();
+  });
+
+  it("offers no export to a bar that was given no files", () => {
+    render(<SelectionBar {...defaultProps} selectedFiles={undefined} />);
+    expect(screen.queryByLabelText("Export as Markdown")).not.toBeInTheDocument();
+  });
+
   it("opens collection picker", () => {
     render(<SelectionBar {...defaultProps} />);
     fireEvent.click(screen.getByLabelText("Add to collection"));
@@ -150,6 +178,7 @@ describe("SelectionBar at 375px", () => {
     "Tagging",
     "Rename",
     "Add to collection",
+    "Export as Markdown",
     "Copy",
     "Cut",
     "Move",
@@ -188,7 +217,7 @@ describe("SelectionBar at 375px", () => {
 
   it("holds every action, and holds each of them once", () => {
     render(<SelectionBar {...defaultProps} />);
-    expect(ALL_ACTIONS).toHaveLength(7);
+    expect(ALL_ACTIONS).toHaveLength(8);
     for (const name of ALL_ACTIONS) {
       expect(screen.getAllByLabelText(name)).toHaveLength(1);
     }
@@ -352,6 +381,7 @@ describe("SelectionBar at 375px", () => {
     expect(
       screen.queryByLabelText("More actions for the selection"),
     ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Export as Markdown")).not.toBeInTheDocument();
   });
 });
 
