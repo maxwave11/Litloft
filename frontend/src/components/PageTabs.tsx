@@ -28,8 +28,14 @@ export interface PageTabsProps {
   label: string;
 }
 
+// The row draws its own hairline. A border under it that the tabs overlap
+// with `-mb-px` leaves them 1px taller than the row, and where scrollbars
+// take space that paints a vertical one.
+const ROW_CLASS =
+  "flex gap-1 overflow-x-auto overflow-y-hidden shadow-[inset_0_-1px_0_var(--bg-border)]";
+
 const BASE_CLASS =
-  "-mb-px inline-flex items-center gap-1.5 rounded-t-xl border-b-2 px-4 py-2 text-sm transition-colors " +
+  "inline-flex items-center gap-1.5 rounded-t-xl border-b-2 px-4 py-2 text-sm transition-colors " +
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring " +
   "pointer-coarse:min-h-11";
 
@@ -53,7 +59,7 @@ export function PageTabs({ items, current, onSelect, label }: PageTabsProps) {
     <nav
       aria-label={label}
       role={isNav ? undefined : "tablist"}
-      className="flex gap-1 overflow-x-auto border-b border-bg-border"
+      className={ROW_CLASS}
     >
       {/* The icons carry no `aria-hidden`: lucide-react adds it itself unless
           an a11y prop is passed. */}
