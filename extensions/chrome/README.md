@@ -41,3 +41,7 @@ node scripts/browser-smoke.mjs
 ```
 
 Set `SMOKE_OUTPUT` to preserve screenshots outside the temporary profile. The fixture checks the browser integration and cookie behavior; backend processing is covered separately by the existing media_import tests. Manifest compatibility starts at Chrome 114; browser verification must name the version actually used.
+
+For installed Chrome versions that require the extension debugging API, set `PLAYWRIGHT_EXECUTABLE` to Chrome's executable and `SMOKE_CDP=1`. These flags apply only to the disposable test profile. `SMOKE_PREGRANT=1` adds the local fixture host permission to a temporary extension copy; this bypasses the native permission dialog in automation. The popup controller is exercised in an extension tab; the native toolbar popup and permission dialog still need a manual check. `SMOKE_LIVE_YOUTUBE=1` also checks the page button on the live site.
+
+`SMOKE_BACKEND` can point to a disposable Litloft test instance with the matching fixture drives and password to exercise real import processing. It must not point to a user's library.

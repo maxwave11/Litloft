@@ -24,8 +24,8 @@ export function createCommands({ chromeApi, settings, operations, apiFactory = c
     if (request.generation !== undefined && request.generation !== config.generation) throw new Error("settingsChanged");
     return { origin: config.origin, generation: config.generation, tabId, videoId: video.id, video };
   }
-  function presentOperation(record) {
-    if (!record) return null;
+  function presentOperation(record, drives) {
+    if (!record || !drives.some((drive) => drive.name === record.drive)) return null;
     return {
       id: record.id, state: record.state, error: record.error,
       drive: record.drive, folder: record.folder, filename: record.filename,
@@ -67,12 +67,12 @@ export function createCommands({ chromeApi, settings, operations, apiFactory = c
         try { await checkDrive(api, lastDestination.drive); await checkFolder(api, lastDestination.drive, lastDestination.folder); }
         catch { lastDestination = null; }
       }
-      return { origin: config.origin, generation: config.generation, drives: drives.map((drive) => ({ name: validateDrive(drive.name) })), hasProtected: Boolean(auth.has_protected_drives), unlockUrl: `${config.origin}/unlock`, lastDestination, operation: presentOperation(operation && drives.some((drive) => drive.name === operation.drive) ? operation : null) };
+      return { origin: config.origin, generation: config.generation, drives: drives.map((drive) => ({ name: validateDrive(drive.name) })), hasProtected: Boolean(auth.has_protected_drives), unlockUrl: `${config.origin}/unlock`, lastDestination, operation: presentOperation(operation, drives) };
     }
     if (request.type === "status") {
       const record = await operations.find(current);
       const drives = await api.drives();
-      return { operation: presentOperation(record && drives.some((drive) => drive.name === record.drive) ? record : null) };
+      return { operation: presentOperation(record, drives) };
     }
     const drive = validateDrive(request.drive);
     const folder = validateFolder(request.folder ?? "");
@@ -90,7 +90,7 @@ export function createCommands({ chromeApi, settings, operations, apiFactory = c
     await checkFolder(api, drive, folder);
     await context(request, sender, caller, await settings.get());
     const reservation = await operations.reserve({ ...current, video: undefined, drive, folder }, request.repeatId);
-    if (!reservation.created) return { operation: presentOperation(reservation.operation) };
+    if (!reservation.created) return { operation: presentOperation(reservation.operation, await api.drives()) };
     let result;
     try {
       await context(request, sender, caller, await settings.get());
@@ -102,6 +102,6 @@ export function createCommands({ chromeApi, settings, operations, apiFactory = c
     }
     const finished = await operations.finish(reservation.operation.id, result);
     if (finished.state === "success") await settings.remember(config, { drive, folder }).catch(() => {});
-    return { operation: presentOperation(finished) };
+    return { operation: presentOperation(finished, await api.drives()) };
   };
 }

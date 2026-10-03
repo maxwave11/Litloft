@@ -56,16 +56,37 @@ test("Stale video, generation, locked drive, disabled addon and absent folder pr
   }
 });
 
-test("Locking a drive hides saved operation details on bootstrap and status", async () => {
-  const f = await fixture();
-  await f.run(f.request, f.sender);
-  f.state.accessible = false;
-  const boot = await f.run({ ...f.request, type: "bootstrap" }, f.sender);
-  const status = await f.run({ ...f.request, type: "status" }, f.sender);
-  assert.deepEqual(boot.drives, []);
-  assert.equal(boot.lastDestination, null);
-  assert.equal(boot.operation, null);
-  assert.equal(status.operation, null);
+test("Locking a drive hides saved operation details across all picker commands", async () => {
+  for (const { drives, timing } of [
+    { drives: [], timing: "after" },
+    { drives: [], timing: "during" },
+    { drives: [{ name: "Public" }], timing: "after" },
+    { drives: [{ name: "Public" }], timing: "during" },
+  ]) {
+    const f = await fixture();
+    if (timing === "during") {
+      const importVideo = f.api.importVideo;
+      f.api.importVideo = async (...args) => {
+        const result = await importVideo(...args);
+        f.api.drives = async () => drives;
+        return result;
+      };
+    }
+    const initial = await f.run(f.request, f.sender);
+    if (timing === "during") assert.equal(initial.operation, null);
+    f.api.drives = async () => drives;
+    const boot = await f.run({ ...f.request, type: "bootstrap" }, f.sender);
+    const status = await f.run({ ...f.request, type: "status" }, f.sender);
+    assert.deepEqual(boot.drives, drives);
+    assert.equal(boot.lastDestination, null);
+    assert.equal(boot.operation, null);
+    assert.equal(status.operation, null);
+    if (drives.length) {
+      const selection = await f.run({ ...f.request, drive: "Public", folder: "" }, f.sender);
+      assert.equal(selection.operation, null);
+      assert.equal(f.calls.length, 1);
+    }
+  }
 });
 
 test("Navigation during journal reservation stops an import before it is sent", async () => {

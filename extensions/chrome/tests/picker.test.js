@@ -53,3 +53,20 @@ test("Disposing a picker prevents its pending response from changing the next vi
   await started;
   assert.equal(renders.length, 1);
 });
+
+test("An inaccessible operation shows an access error without retrying the import", async () => {
+  let state;
+  let imports = 0;
+  const controller = createPickerController({ video: { id: "dQw4w9WgXcQ" }, render: (s) => { state = structuredClone(s); }, send: async (request) => {
+    if (request.type === "bootstrap") return { drives: [{ name: "drive" }], generation: "g1" };
+    if (request.type === "import") { imports++; return { operation: null }; }
+    if (request.type === "status") return { operation: null };
+    return { folders: [] };
+  } });
+  await controller.start();
+  await controller.choose("");
+  assert.equal(state.operation, null);
+  assert.equal(state.error, "unavailable");
+  assert.equal(imports, 1);
+  controller.dispose();
+});

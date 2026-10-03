@@ -75,6 +75,7 @@ export function createPickerController({ video, tabId, send, render, schedule = 
     state.busy = true; state.operation = { state: "pending", drive: state.drive, folder }; publish();
     try {
       const result = await message("import", { drive: state.drive, folder, repeatId });
+      if (!result.operation) throw new Error("unavailable");
       if (!disposed && expected === revision) { state.operation = result.operation; state.busy = false; publish(); poll(); }
     } catch (error) {
       if (disposed || expected !== revision) return;
