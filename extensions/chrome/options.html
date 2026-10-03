@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Litloft</title><link rel="stylesheet" href="styles/options.css"></head>
+<body>
+  <main>
+    <p class="eyebrow">LITLOFT · CHROME</p>
+    <h1 data-message="settingsTitle"></h1>
+    <p data-message="settingsIntro"></p>
+    <form id="settings">
+      <label for="origin" data-message="serverAddress"></label>
+      <input id="origin" type="url" placeholder="http://localhost:3001" required autocomplete="url">
+      <label for="stt" data-message="sttLabel"></label>
+      <select id="stt"><option value="manual" data-message="sttManual"></option><option value="missing_captions" data-message="sttMissing"></option><option value="always" data-message="sttAlways"></option></select>
+      <p class="hint" data-message="sttHint"></p>
+      <button type="submit" data-message="saveSettings"></button>
+      <button id="check" type="button" class="secondary" data-message="checkConnection"></button>
+    </form>
+    <p id="status" role="status" aria-live="polite"></p>
+    <a id="unlock" target="_blank" rel="noopener noreferrer" hidden data-message="openLitloft"></a>
+  </main>
+  <script type="module" src="options.js"></script>
+</body></html>

@@ -43,6 +43,8 @@ In `drives.json`, or in **Addon policy** at `/admin/settings`:
 
 ## Importing a video
 
+The [Chrome extension](../getting-started/chrome-extension.md) also adds the current YouTube video directly from YouTube or Chrome's toolbar, using this addon's usual import processing. See [Adding YouTube videos from Chrome](../user-guide/chrome-extension.md).
+
 There are two ways in:
 
 - **Add** menu: on Home or in a Library folder, open **Add** and choose **Import from URL**. The dialog starts at the current folder (the drive root on Home) and imports one video. If the import fails, the URL and folder stay filled in so you can try again. A channel, playlist or feed URL is not imported here; the dialog offers **Open Media Import**, which opens the **YouTube & Feeds** page.
