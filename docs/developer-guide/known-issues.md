@@ -593,3 +593,19 @@ local fallback).
 it is open, arrows, Home, End and Escape move or close the menu from anywhere,
 including a text field; with both summary menus open, closing one unbinds the
 other's keys. Reached only with the keyboard, by tabbing away from an open menu.
+
+**A URL that only mentions `youtube.com` is taken for a YouTube video.** The
+provider pattern is a substring search, so `https://example.test/x?u=youtube.com`
+imports as YouTube and its comments are fetched through yt-dlp. Reached by
+pasting such a URL into Import from URL; the host is whatever the viewer typed.
+
+**Pressing Refresh on the comments again after a fetch finishes starts another
+full fetch.** Dedup holds only while one is pending, and nothing limits it per
+file or drive, so each press is hundreds of requests to YouTube from one IP.
+Reached by pressing Refresh on a video's Comments tab several times in a row.
+
+**A commenter's display name can imitate the likes and flags in the copied
+Markdown.** The role tag cannot be forged, but a name such as
+`@bob · 99 likes · pinned` reads as facts, and the video title is not
+neutralised in the heading either. Reached by copying the comments of a video
+whose commenter chose such a name.
