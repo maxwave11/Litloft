@@ -12,6 +12,7 @@ It runs inside the backend, is scoped to a drive, and appears in the sidebar as 
 - With the [intelligence addon](intelligence.md), a video without captions can be transcribed with speech-to-text.
 - YouTube and Vimeo play in embedded players inside Litloft. Other sites show a link card.
 - You can subscribe to a YouTube channel or playlist, and its new videos are imported on a schedule.
+- A YouTube video's most-liked comments are saved too, with the video author's own comments and replies marked, and can be copied for an AI assistant. See [YouTube comments](#youtube-comments).
 
 ## Installation
 
@@ -95,6 +96,40 @@ Two actions for a `.loft` are in the file's menus:
 
 Both show their result as a notification.
 
+## YouTube comments
+
+The comments are a **Comments** tab in the row of tabs at the end of the page of a YouTube `.loft`, after the summaries and before **Add summary**. Once they are loaded the tab reads **Comments (N)**. The row belongs to the [intelligence addon](intelligence.md): on a drive where it is off, the comments show as a block of their own with a **YouTube comments** heading, below the page.
+
+- **What is saved.** The video's top comments, in YouTube's "top" order: at most 300, each with its author, like count, and whether it is pinned or liked by the video's author, and up to 5 replies under each. A video with 12,000 comments keeps 300 of them. The tab shows how many of the video's comments it holds and when they were loaded.
+- **When.** Importing a single video, with **Import from URL** or the **Add a source** form, loads its comments in the background once the metadata is in. Videos that arrive through a subscription, **Fetch more**, **Sync now** or **Fetch all channel** do not; their tab offers **Load comments**, with a note that loading can take a few minutes and that you can leave the page. **Refresh** replaces the saved comments with a new set. A failed refresh keeps the previous set, and the tab says why; for a rate limit or an unknown failure the message has a **Try again** link.
+- **The video's author.** The author's own comments and replies carry an **Author** badge and a coloured rule on the left; everyone else's have neither. A comment the author liked shows a small heart and stays a viewer's comment. The author is recognised by the channel, never by the name shown, because anyone can pick a name.
+- **Long lists.** The first 20 comments are shown; **Show all** opens the rest. Replies are folded under **N replies**.
+- **Copy** puts all the comments on the clipboard as Markdown, ready to paste into an AI assistant next to the transcript. Every comment and reply starts with `[AUTHOR]` (the video's own channel) or `[VIEWER]` (anyone else), likes are exact numbers, and a header says how many comments and replies the author wrote:
+
+  ```markdown
+  # YouTube comments: Video title
+  Top 2 of 12345, fetched 2026-10-03. The video author wrote 1 of the comments and replies below.
+  [AUTHOR] = the video's own channel. [VIEWER] = anyone else.
+
+  - [VIEWER] @someone · 1200 likes · hearted by author
+    > At 12:40 he confuses correlation with causation
+    - [AUTHOR] @channel · 340 likes
+      > Fair, the study says the opposite
+  ```
+
+  Each line of a comment's own text is quoted with `>`, and an `[AUTHOR]` or `[VIEWER]` typed inside a comment is changed to `(AUTHOR)` or `(VIEWER)`, so a comment cannot pass for the author's.
+
+The comments are not indexed: search and Ask do not see them, and the intelligence addon does not read them. Copy them into an assistant yourself.
+
+Loading is slow on purpose. YouTube serves the replies of each thread in a request of its own, so one video can take a couple of hundred requests, spaced a second apart, and a fetch can last minutes. `MEDIA_IMPORT_COMMENTS_MAX` sets the number of top-level comments kept; see [environment variables](../reference/env-variables.md#media_import_comments_max).
+
+API, both drive-scoped (`X-Lit-Drive`):
+
+- `GET /api/addons/media_import/link/{file_id}/comments` returns `supported`, `state` (`none`, `queued`, `ready` or `error`), `error_kind`, `fetched_at`, `total` and the comments, each with its replies. After a failed refresh `state` is `error` and the previous comments are still returned. `supported` is `false` for a `.loft` that is not YouTube's.
+- `POST /api/addons/media_import/link/{file_id}/comments/refresh` queues a fetch and answers `202` with `{ "status": "queued" }` or `{ "status": "already_queued" }`. A `.loft` that is not YouTube's, or has no metadata yet, is `400`.
+
+Both answer `404` for a drive the caller cannot see, and for a file that is missing or in the trash. `GET` also answers `404` for a `.loft` that has no metadata yet.
+
 ## Search and Ask
 
 Core search finds a `.loft` by its filename, which is the video title. With the [intelligence addon](intelligence.md), the captions and speech-to-text transcripts are indexed too, so semantic search and Ask can find a video by what is said in it.
@@ -139,6 +174,7 @@ A subscription's details show its schedule, destination and imported items, with
 - The addon never saves the video file. Only the speech-to-text audio is downloaded, temporarily, for transcription.
 - yt-dlp reads public web pages, and the provider may throttle many imports made in a short time. Throttled caption downloads are retried later.
 - Encrypted (DRM) streams are not supported.
+- Only the top comments of a YouTube video are saved, not all of them, and not for Vimeo or other sites.
 - Some videos cannot be embedded outside the provider's site.
 
 ## Troubleshooting
@@ -149,6 +185,10 @@ A subscription's details show its schedule, destination and imported items, with
 | No captions | The video has none, or they could not be downloaded. The caption status under the player says which. |
 | **Embedded playback is disabled for this video** | The owner does not allow embedding. Use **Watch on YouTube**. |
 | **Refresh metadata** changes nothing | The fetch failed. Check `docker compose logs backend`. |
+| The Comments tab says **YouTube is limiting requests right now** | YouTube refused the request. Wait, then press **Refresh**. |
+| **Comments are turned off or unavailable for this video** | The author turned them off, or YouTube shows none for this viewer. |
+| **This video is unavailable, so its comments cannot be read** | The video is private or removed. |
+| **The comments could not be loaded** | Another failure. Check `docker compose logs backend`, then press **Refresh**. |
 | A subscription shows **Backoff active** | Listing the channel's videos is failing. Check `docker compose logs backend`; if the provider is down, wait. |
 
 ## See also

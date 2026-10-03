@@ -249,6 +249,15 @@ A normal deployment needs none of these. The `/api/*` rewrite always targets `ht
 
 ---
 
+## Media Import addon
+
+### `MEDIA_IMPORT_COMMENTS_MAX`
+- **Default**: `300`
+- Set on: backend.
+- How many top-level comments to keep from a YouTube video; up to 5 replies under each are kept on top of that. A value that is not a whole number above zero is ignored and the default is used. Read when a fetch starts, so a new value applies once the container restarts. A lower number loads faster and asks YouTube for fewer requests.
+
+---
+
 ## Recommended for a production install
 
 | Variable | Set on | Why |

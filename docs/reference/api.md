@@ -285,6 +285,10 @@ Channel history import: the media_import addon exposes drive-scoped `POST` and `
 
 `POST /api/addons/media_import/subscriptions/{id}/backfill` accepts `{ "count": 15 }` (`1`–`200`) and enqueues up to that many unseen uploads. YouTube channels use the full uploads list, including Shorts and saved livestreams; playlists use their normal listing. The response is `{ "status": "queued" }` or `{ "status": "already_queued" }`. Backfill and manual sync return 409 while Fetch all is active or during its error cooldown.
 
+## Addon YouTube comments
+
+The media_import addon exposes drive-scoped `GET /api/addons/media_import/link/{file_id}/comments`, the saved comments of a YouTube `.loft`, and `POST /api/addons/media_import/link/{file_id}/comments/refresh`, which queues a fetch and answers `202` with `{ "status": "queued" }` or `{ "status": "already_queued" }`. The response fields and the errors are in [Media Import](../addons/media-import.md#youtube-comments).
+
 ## WebSocket
 
 `/api/ws`. See [WebSocket events](websocket-events.md).

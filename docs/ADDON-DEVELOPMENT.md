@@ -921,6 +921,41 @@ useOfferFileAiAction({
 - With no intelligence addon installed there is no menu, and the offer is not
   shown anywhere.
 
+### Adding a tab to the reading row
+
+The intelligence addon draws the row of tabs at the end of the page of a video
+or audio file: the transcript, the summaries, **Add summary**. Any addon can add
+a tab to it from a component already mounted on the file page, through
+`@/lib/readingTabs`:
+
+```tsx
+import { useHasReadingTabHost, useOfferReadingTab } from "@/lib/readingTabs";
+
+const hosted = useHasReadingTabHost(fileId);
+const panel = <YourPanel heading={!hosted} />;
+
+useOfferReadingTab(fileId, applies ? {
+  id: "your_addon.tab",     // unique across addons
+  label: t("tab"),          // already translated; it may carry a count
+  icon: SomeLucideIcon,
+  order: 50,                // ascending; "Add summary" is always last
+  panel,
+} : null);
+
+return hosted ? null : panel;
+```
+
+- The tab is shown while the second argument is not `null`. Pass `null` for a
+  file the tab does not apply to.
+- Mount the component in `file-detail-reading`. When the row draws the tab, the
+  component returns nothing; `useHasReadingTabHost` is `false` where intelligence
+  is off for the drive, and the component then draws the panel itself so the
+  content does not vanish.
+- `panel` is an element the offerer built, drawn by the row. Keep the state in
+  the offerer and rebuild the element when it changes; every render republishes
+  it. The panel stays mounted while another tab is open.
+- The tab is never the one the page opens on.
+
 ### Contributing to the add menu
 
 `folder-actions-menu` follows the file actions menu's contract: render

@@ -55,6 +55,8 @@ Whichever you choose, a video or audio file also ends with a row of tabs:
 
 When a file has summaries, the first one opens first.
 
+A YouTube video imported from a link also has a **Comments** tab in that row: the most-liked comments with their likes, the video author's own comments and replies marked **Author**, and **Copy**, which puts them on the clipboard as Markdown that says for every line whether the author or a viewer wrote it, ready to paste into an AI assistant. Videos that came in through a subscription show **Load comments** in the tab, and **Refresh** loads the comments again. See [Media Import](../addons/media-import.md#youtube-comments).
+
 ## Chapters
 
 Click a chapter to jump to it. The chapter you are in is highlighted, and collapsing the list leaves just its name.
