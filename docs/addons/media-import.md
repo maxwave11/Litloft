@@ -121,6 +121,8 @@ The comments are a **Comments** tab in the row of tabs at the end of the page of
 
 The comments are not indexed: search and Ask do not see them, and the intelligence addon does not read them. Copy them into an assistant yourself.
 
+**Export as Markdown**, the selection bar's action for several videos, adds a **YouTube comments** section for each `.loft` whose comments are loaded: the line saying how many were loaded and when, then the same list as **Copy**, with the same `[AUTHOR]` and `[VIEWER]` tags and a key to them under the document title. It only uses what is already saved and never loads comments itself; a `.loft` without saved comments is named in the warning shown before the document.
+
 Loading is slow on purpose. YouTube serves the replies of each thread in a request of its own, so one video can take a couple of hundred requests, spaced a second apart, and a fetch can last minutes. `MEDIA_IMPORT_COMMENTS_MAX` sets the number of top-level comments kept; see [environment variables](../reference/env-variables.md#media_import_comments_max).
 
 API, both drive-scoped (`X-Lit-Drive`):

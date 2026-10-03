@@ -1347,6 +1347,7 @@ Slot entries each addon declares, for reference when designing your own.
 | `intelligence` | `file-relations` | `similar-files` |
 | `intelligence` | `player-side` | `transcript` |
 | `intelligence` | `file-detail-reading` | `reading` |
+| `intelligence` | `markdown-export-sections` | `transcript-export` |
 | `intelligence` | `file-detail-actions` | `file-ai-actions` |
 | `intelligence` | `file-actions-menu` | `index-details` |
 | `intelligence` | `folder-bulk-actions-menu` | `folder-ai-actions` |
@@ -1364,6 +1365,7 @@ Slot entries each addon declares, for reference when designing your own.
 | `knowledge` | `search-result-actions` | `knowledge-search-capture` |
 | `knowledge` | `active-summary-view` | `knowledge-active-summary` |
 | `media_import` | `loft-metadata` | `loft-metadata` |
+| `media_import` | `markdown-export-sections` | `comments-export` |
 | `media_import` | `folder-actions-menu` | `media-import-url` |
 | `media_import` | `file-actions-menu` | `loft-refresh` |
 | `cloud-sync` | `dashboard-widgets` | `cloud-sync` |
