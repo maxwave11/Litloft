@@ -15,11 +15,13 @@
   shadow.append(css, button);
   let video;
   let popover;
+  let portal;
   let controller;
   let queued = false;
   function close() {
     controller?.dispose(); controller = null;
     popover?.remove(); popover = null;
+    portal?.remove(); portal = null;
     button.setAttribute("aria-expanded", "false");
   }
   function position() {
@@ -38,12 +40,16 @@
     popover.className = "page-popover";
     popover.setAttribute("role", "dialog");
     popover.setAttribute("aria-label", "Add to Litloft");
-    shadow.append(popover);
+    portal = document.createElement("litloft-picker");
+    portal.style.cssText = "position:fixed;top:0;left:0;z-index:2147483647;width:0;height:0";
+    const portalShadow = portal.attachShadow({ mode: "closed" });
+    portalShadow.append(css.cloneNode(), popover);
+    document.body.append(portal);
     button.setAttribute("aria-expanded", "true");
     controller = mountPicker(popover, current);
     position();
   });
-  document.addEventListener("pointerdown", (event) => { if (popover && !event.composedPath().includes(host)) close(); });
+  document.addEventListener("pointerdown", (event) => { if (popover && !event.composedPath().includes(host) && !event.composedPath().includes(portal)) close(); });
   document.addEventListener("keydown", (event) => { if (event.key === "Escape" && popover) { close(); button.focus(); } });
   window.addEventListener("resize", position);
   window.addEventListener("scroll", position, { passive: true });
@@ -66,9 +72,13 @@
     requestAnimationFrame(update);
   }
   const observer = new MutationObserver(queue);
-  observer.observe(document.body, { childList: true, subtree: true });
+  function start() {
+    observer.observe(document.body, { childList: true, subtree: true });
+    update();
+  }
   document.addEventListener("yt-navigate-finish", queue);
   window.addEventListener("popstate", queue);
-  window.addEventListener("pagehide", () => { observer.disconnect(); close(); host.remove(); }, { once: true });
-  update();
+  window.addEventListener("pagehide", () => { observer.disconnect(); close(); host.remove(); });
+  window.addEventListener("pageshow", start);
+  start();
 })();

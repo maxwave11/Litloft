@@ -22,7 +22,7 @@ async function fixture() {
   const run = createCommands({ chromeApi, settings, operations: createOperations(storage), apiFactory: () => api });
   const sender = { id: "test", url: "chrome-extension://test/popup.html" };
   const request = { type: "import", tabId: 1, videoId: "dQw4w9WgXcQ", generation: config.generation, drive: "動画", folder: "子" };
-  return { run, sender, request, calls, state, config, settings };
+  return { run, sender, request, calls, state, config, settings, storage, api };
 }
 test("Untrusted senders and content scripts cannot change settings or select arbitrary URLs", async () => {
   const f = await fixture();
@@ -66,4 +66,28 @@ test("Locking a drive hides saved operation details on bootstrap and status", as
   assert.equal(boot.lastDestination, null);
   assert.equal(boot.operation, null);
   assert.equal(status.operation, null);
+});
+
+test("Navigation during journal reservation stops an import before it is sent", async () => {
+  const f = await fixture();
+  const persist = f.storage.set.bind(f.storage);
+  f.storage.set = async (values) => {
+    await persist(values);
+    if (values.operations?.some((operation) => operation.state === "pending")) f.state.url = "https://www.youtube.com/watch?v=abcdefghijk";
+  };
+  const result = await f.run(f.request, f.sender);
+  assert.equal(f.calls.length, 0);
+  assert.equal(result.operation.state, "error");
+});
+
+test("Invalid creation confirmations remain unknown and cannot trigger an automatic retry", async () => {
+  for (const response of [{}, { file_id: "", filename: "video.loft" }, { file_id: "f1", filename: "" }, { file_id: 123, filename: "video.loft" }]) {
+    const f = await fixture();
+    f.api.importVideo = async () => { f.calls.push(response); return response; };
+    const result = await f.run(f.request, f.sender);
+    assert.equal(result.operation.state, "unknown");
+    const reopened = await f.run(f.request, f.sender);
+    assert.equal(reopened.operation.id, result.operation.id);
+    assert.equal(f.calls.length, 1);
+  }
 });

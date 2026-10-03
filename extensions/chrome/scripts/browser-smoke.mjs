@@ -67,8 +67,14 @@ let context;
 try {
   context = await chromium.launchPersistentContext(profile, {
     ...(process.env.PLAYWRIGHT_EXECUTABLE ? { executablePath: process.env.PLAYWRIGHT_EXECUTABLE } : { channel: "chromium" }), headless: true,
-    args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`],
+    ignoreDefaultArgs: ["--disable-extensions", "--disable-back-forward-cache"],
+    args: process.env.SMOKE_CDP === "1" ? ["--enable-unsafe-extension-debugging"] : [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`],
   });
+  if (process.env.SMOKE_CDP === "1") {
+    const cdp = await context.browser().newBrowserCDPSession();
+    await cdp.send("Extensions.loadUnpacked", { path: extension });
+    await cdp.detach();
+  }
   const errors = [];
   context.on("page", (page) => page.on("pageerror", (error) => errors.push(error.message)));
   const worker = context.serviceWorkers()[0] || await context.waitForEvent("serviceworker");
@@ -95,6 +101,18 @@ try {
   await youtube.waitForFunction(() => document.querySelector("litloft-add-video").getBoundingClientRect().width < 200);
   await youtube.screenshot({ path: join(output, "youtube.png") });
   await youtube.keyboard.press("Escape");
+  const documentToken = await youtube.evaluate(() => {
+    window.smokeToken = crypto.randomUUID();
+    window.addEventListener("pageshow", (event) => { window.smokeRestored = event.persisted; });
+    return window.smokeToken;
+  });
+  await youtube.goto(`${origin}/unlock`);
+  await youtube.goBack({ waitUntil: "commit" });
+  await youtube.waitForFunction(() => window.smokeRestored === true);
+  assert.equal(await youtube.evaluate(() => window.smokeToken), documentToken);
+  assert.equal(await youtube.evaluate(() => window.smokeRestored), true);
+  await youtube.locator("litloft-add-video").waitFor({ timeout: 5000 });
+  assert.equal(await youtube.locator("litloft-add-video").count(), 1);
   const popup = await context.newPage();
   await popup.goto(`chrome-extension://${extensionId}/popup.html`);
   await youtube.bringToFront();
@@ -142,8 +160,22 @@ try {
   assert.equal(await youtube.locator("litloft-add-video").count(), 1);
   await youtube.evaluate(() => { history.pushState({}, "", "/@fixture"); document.dispatchEvent(new Event("yt-navigate-finish")); });
   await youtube.locator("litloft-add-video").waitFor({ state: "detached" });
+  let liveYouTube = "not requested";
+  if (process.env.SMOKE_LIVE_YOUTUBE === "1") {
+    await context.unrouteAll();
+    try {
+      await youtube.goto("https://www.youtube.com/watch?v=dQw4w9WgXcQ", { waitUntil: "domcontentloaded", timeout: 30000 });
+      await youtube.locator("litloft-add-video").waitFor({ timeout: 20000 });
+      await youtube.locator("litloft-add-video").click();
+      await youtube.screenshot({ path: join(output, "live-youtube.png") });
+      liveYouTube = "page button available";
+    } catch (error) {
+      liveYouTube = `unverified: ${error.name}`;
+      await youtube.screenshot({ path: join(output, "live-youtube-unverified.png") }).catch(() => {});
+    }
+  }
   assert.deepEqual(errors, []);
-  console.log(JSON.stringify({ browser: context.browser()?.version(), pregrantedTestHost: process.env.SMOKE_PREGRANT === "1", origin, extensionId, imports: requests.length, checks: ["configured host permission", "strict access/viewer cookies", "locked drives", "folder expansion without POST", "Unicode nested import", "success", "5xx unknown without retry", "SPA removal"], screenshots: output }));
+  console.log(JSON.stringify({ browser: context.browser()?.version(), pregrantedTestHost: process.env.SMOKE_PREGRANT === "1", origin, extensionId, imports: requests.length, liveYouTube, checks: ["configured host permission", "strict access/viewer cookies", "locked drives", "BFCache restoration", "popup controller", "folder expansion without POST", "Unicode nested import", "success", "5xx unknown without retry", "SPA removal"], screenshots: output }));
 } catch (error) {
   for (const [index, page] of (context?.pages() ?? []).entries()) {
     console.error("SMOKE_PAGE", page.url(), await page.locator("body").innerText().catch(() => ""));
