@@ -61,7 +61,7 @@ export function MarkdownExportPresenter({
         <div className="flex items-center justify-between gap-3 border-b border-bg-border px-5 py-4">
           <h2 className="text-lg font-semibold text-text-primary">{text.title}</h2>
           <div className="flex items-center gap-2">
-            {view.phase === "document" && (
+            {view.phase === "document" && view.videos.length > 0 && (
               <Button variant="primary" onClick={onCopy}>
                 <Copy size={14} />
                 {text.copy}

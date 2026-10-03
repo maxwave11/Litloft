@@ -1,11 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 
+import { ShortcutsProvider } from "@/components/ShortcutsProvider";
+import { useShortcuts } from "@/hooks/useShortcuts";
 import { resetExportSections, type ExportSectionProvider } from "@/lib/exportSections";
 import type { FileItem } from "@/types";
 
 const hoisted = vi.hoisted(() => ({
   slot: {
+    loading: false,
     expected: [] as { id: string; label: string }[],
     offering: [] as unknown[],
   },
@@ -15,7 +18,7 @@ const hoisted = vi.hoisted(() => ({
 
 vi.mock("@/components/AddonSlotsProvider", () => ({
   useAddonSlots: () => ({
-    loading: false,
+    loading: hoisted.slot.loading,
     getSlotEntries: () => hoisted.slot.expected,
   }),
 }));
@@ -74,6 +77,7 @@ function open(files: FileItem[], onClose = vi.fn()) {
 }
 
 beforeEach(() => {
+  hoisted.slot.loading = false;
   hoisted.slot.expected = [];
   hoisted.slot.offering = [];
   hoisted.copyText.mockClear();
@@ -239,5 +243,96 @@ describe("MarkdownExportContainer", () => {
 
     expect(screen.queryByText(/Other/)).toBeNull();
     expect(build).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("MarkdownExportContainer as a dialog", () => {
+  it("is a named dialog that the close button dismisses", async () => {
+    offer(transcriptProvider(async () => section("t")));
+    const { onClose } = open([video("a", "First")]);
+    await screen.findByText("1. First");
+
+    expect(screen.getByRole("dialog", { name: "Export as Markdown" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("offers Copy only when there is a document to copy", async () => {
+    offer(transcriptProvider(async () => ({ kind: "empty" })));
+    open([video("a", "First")]);
+
+    await screen.findByRole("alert");
+    expect(screen.queryByRole("button", { name: "Copy" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+
+    expect(screen.getByText("Nothing to export.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Copy" })).toBeNull();
+  });
+
+  it("warns that nothing can provide content when no provider is offered", async () => {
+    hoisted.slot.expected = [];
+    hoisted.slot.offering = [];
+    open([video("a", "First")]);
+
+    const alert = await screen.findByRole("alert");
+
+    expect(alert.textContent).toContain("Nothing here can provide content for the export.");
+  });
+
+  it("does not take the providers there are before the slot catalogue has loaded", async () => {
+    hoisted.slot.loading = true;
+    const { again } = open([video("a", "First")]);
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByRole("status").textContent).toContain("Preparing…");
+
+    hoisted.slot.loading = false;
+    again();
+
+    expect(await screen.findByRole("alert")).toBeTruthy();
+  });
+});
+
+describe("MarkdownExportContainer and the page's shortcuts", () => {
+  function Page({ onCopy }: { onCopy: () => void }) {
+    useShortcuts("page", "Page", [{ key: "ctrl+c", label: "Copy", handler: onCopy }]);
+    return null;
+  }
+
+  function openOverPage(onClose = vi.fn()) {
+    const onCopy = vi.fn();
+    render(
+      <ShortcutsProvider>
+        <Page onCopy={onCopy} />
+        <MarkdownExportContainer files={[video("a", "First")]} drive="d" onClose={onClose} />
+      </ShortcutsProvider>,
+    );
+    return { onCopy, onClose };
+  }
+
+  it("closes on Escape", async () => {
+    offer(transcriptProvider(async () => section("t")));
+    const { onClose } = openOverPage();
+    await screen.findByText("1. First");
+
+    fireEvent.keyDown(document.body, { key: "Escape" });
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves the page's Ctrl+C alone, and the browser's own copy of selected text unprevented", async () => {
+    offer(transcriptProvider(async () => section("t")));
+    const { onCopy } = openOverPage();
+    await screen.findByText("1. First");
+
+    const notPrevented = fireEvent.keyDown(document.body, { key: "c", ctrlKey: true });
+
+    expect(onCopy).not.toHaveBeenCalled();
+    expect(notPrevented).toBe(true);
   });
 });

@@ -11,7 +11,8 @@ export type Gap =
   | { kind: "overCap"; count: number };
 
 function outcomeOf(file: ExportedFile, providerId: string): ProviderOutcome {
-  return file.outcomes[providerId] ?? { kind: "failed" };
+  const outcome = file.outcomes[providerId] ?? { kind: "failed" };
+  return outcome.kind === "section" && !outcome.markdown.trim() ? { kind: "empty" } : outcome;
 }
 
 function hasSection(file: ExportedFile, providerIds: readonly string[]): boolean {
@@ -70,13 +71,31 @@ function oneLine(text: string): string {
     .replace(/([[\]\\])/g, "\\$1");
 }
 
-/** GitHub's heading anchor: letters, digits and hyphens, spaces to hyphens. */
+/**
+ * GitHub's heading anchor: what it keeps is letters, marks, digits, connector
+ * punctuation (`_`) and hyphens, and each space becomes its own hyphen, so a
+ * removed `|` between two spaces leaves two.
+ */
 function anchorOf(heading: string): string {
   return heading
     .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s-]/gu, "")
-    .trim()
-    .replace(/\s+/g, "-");
+    .replace(/[^\p{L}\p{M}\p{N}\p{Pc} -]/gu, "")
+    .replace(/ /g, "-");
+}
+
+/**
+ * The link as the URL parser writes it, which has no line break in it, with
+ * the brackets encoded so no text a provider treats as a tag can be spelled in
+ * it; or nothing.
+ */
+function linkOf(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+    return parsed.href.replace(/\[/g, "%5B").replace(/\]/g, "%5D");
+  } catch {
+    return null;
+  }
 }
 
 function addedDay(createdAt: string): string | null {
@@ -93,7 +112,8 @@ function metadataLine(entry: ExportedFile, labels: ExportLabels): string | null 
   if (day) parts.push(`${labels.added} ${day}`);
   const tags = file.tags.map((tag) => tag.trim().replace(/\s+/g, "-")).filter(Boolean);
   if (tags.length > 0) parts.push(tags.map((tag) => `#${tag}`).join(" "));
-  if (entry.originalUrl) parts.push(entry.originalUrl);
+  const link = entry.originalUrl ? linkOf(entry.originalUrl) : null;
+  if (link) parts.push(link);
   return parts.length > 0 ? `_${parts.join(" · ")}_` : null;
 }
 

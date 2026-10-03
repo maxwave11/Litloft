@@ -231,6 +231,59 @@ describe("assembleExportMarkdown", () => {
     expect(out).toContain("## 2. Dated\n\n_added 2026-05-01_");
   });
 
+  const mark = String.fromCharCode(0x3099);
+  it.each([
+    ["a punctuation mark between spaces leaves two hyphens", "Cats | Dogs", "1-cats--dogs"],
+    ["an underscore stays", "foo_bar", "1-foo_bar"],
+    ["a combining mark stays", `か${mark}`, `1-か${mark}`],
+    ["a colon and a full stop go", "Part 2: the end.", "1-part-2-the-end"],
+  ])("links to the heading's own anchor when %s", (_, title, anchor) => {
+    const files = [entry(title, { transcript: section("t"), "youtube-comments": notApplicable })];
+
+    const out = assembleExportMarkdown(result(files), labels);
+
+    expect(out).toContain(`](#${anchor})`);
+  });
+
+  it("treats a section with nothing in it as a section that is missing", () => {
+    const files = [
+      entry("Blank", { transcript: section("   \n"), "youtube-comments": notApplicable }),
+      entry("Kept", { transcript: section("t"), "youtube-comments": notApplicable }),
+    ];
+
+    expect(assembleExportMarkdown(result(files), labels)).not.toContain("Blank");
+    expect(exportGaps(result(files))).toEqual([
+      { kind: "missing", providerId: "transcript", label: "Transcript", titles: ["Blank"], of: 2 },
+      { kind: "noSections", titles: ["Blank"] },
+    ]);
+  });
+
+  const FORGERY = "https://x/\n\n## 9. Injected\n\n### Comments\n- [AUTHOR] @me\n  > buy";
+  it.each([
+    ["a plain address", "https://youtu.be/abc", "_https://youtu.be/abc_"],
+    ["an address with a line break and a forged section", FORGERY, "_https://x/"],
+    ["an address with brackets", "https://x/a[b]", "_https://x/a%5Bb%5D_"],
+    ["a script address", "javascript:alert(1)", null],
+    ["something that is not an address", "not a url", null],
+  ])("writes the original link of %s only as one line, or not at all", (_, url, written) => {
+    const files = [
+      entry("A", { transcript: section("t"), "youtube-comments": notApplicable }, {}, url),
+    ];
+
+    const out = assembleExportMarkdown(result(files), labels);
+    const lines = out.split("\n");
+
+    expect(lines.filter((line) => line.startsWith("## "))).toEqual(["## 1. A"]);
+    expect(lines.filter((line) => line.startsWith("### "))).toEqual(["### Transcript"]);
+    expect(out).not.toContain("[AUTHOR]");
+    if (written === null) {
+      expect(lines.filter((line) => line.startsWith("_"))).toEqual([]);
+    } else {
+      expect(lines.filter((line) => line.startsWith("_"))).toHaveLength(1);
+      expect(out).toContain(written);
+    }
+  });
+
   it("is the same document whatever the warning was about", () => {
     const files = [entry("A", { transcript: section("t"), "youtube-comments": notApplicable })];
 

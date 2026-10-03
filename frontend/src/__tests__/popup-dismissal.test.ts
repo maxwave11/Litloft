@@ -226,6 +226,12 @@ const POPUPS: Record<string, PopupEntry> = {
     dismissedIn: null,
     why: "an immersive viewer — it replaces the page and marks the rest inert",
   },
+  "frontend/src/components/markdownExport/MarkdownExportPresenter.tsx": {
+    dismissedIn: null,
+    why:
+      "a modal dialog with its own backdrop; Escape is bound by its container " +
+      "and blocks the page's shortcuts below it",
+  },
   "frontend/src/components/ShortcutCheatSheet.tsx": {
     dismissedIn: null,
     why: "a modal dialog with its own backdrop",

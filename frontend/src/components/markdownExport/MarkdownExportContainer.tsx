@@ -67,6 +67,7 @@ export function MarkdownExportContainer({
     [{ key: "escape", label: "Cancel", editingOnly: false, handler: onClose, hidden: true }],
     true,
     OVERLAY_PRIORITY,
+    true,
   );
 
   useEffect(() => {
