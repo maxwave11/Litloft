@@ -228,9 +228,7 @@ const POPUPS: Record<string, PopupEntry> = {
   },
   "frontend/src/components/markdownExport/MarkdownExportPresenter.tsx": {
     dismissedIn: null,
-    why:
-      "a modal dialog with its own backdrop; Escape is bound by its container " +
-      "and blocks the page's shortcuts below it",
+    why: "a modal dialog with its own backdrop",
   },
   "frontend/src/components/ShortcutCheatSheet.tsx": {
     dismissedIn: null,

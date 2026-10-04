@@ -625,3 +625,26 @@ video's page during its import; the end of the fetch corrects it.
 elsewhere.** A page on a loaded snapshot re-reads only on its own press, so a
 refresh from another tab or another viewer shows after a reload. Reached with
 two tabs open on one video.
+**A contents link in the Markdown export can miss its heading.** The export
+builds the anchor from the heading's source text, and GitHub builds it from the
+rendered text, so a video title ending in ` #` or carrying `_emphasis_` gets a
+link that does not resolve once the pasted document is rendered. Reached by
+exporting such a video and viewing the document in a Markdown renderer; the
+dialog and an assistant reading the text are not affected.
+
+**The original link of a video at an IPv6 address is changed in the Markdown
+export.** Brackets in the link are written as `%5B` and `%5D`, which turns
+`https://[::1]/x` into a different address. Reached by exporting a `.loft`
+whose URL has an IPv6 literal host.
+
+**A section of only zero-width characters counts as content in the Markdown
+export.** The video is listed with an empty-looking section and no warning.
+Reached only when an addon returns such text.
+
+**The Markdown export dialog does not take focus or hold Tab.** Focus stays on
+the selection bar under the backdrop and Tab walks into the page behind it.
+Reached with the keyboard.
+
+**A click outside the Markdown export dialog throws away the finished
+document.** Opening it again collects everything anew, one request per video
+and source. Reached by clicking the backdrop before pressing Copy.
