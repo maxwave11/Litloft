@@ -671,3 +671,17 @@ Reached by selecting such a video and pressing the button more than once.
 it was queued.** The request is sent in chunks of 1000; if a later chunk fails the
 button says it failed although the earlier chunks are loading, and pressing again
 counts only what was left. Reached with a selection over 1000 and a failing request.
+
+**The selection bar clips Move to Trash while the tag editor is open.** The editor
+takes about 285px where the Tag button took about 90px, and the row has no spare
+width at the widths where button names show. It was clipped the same way before
+the names became width-dependent. Reached by pressing Tag with the bar wide enough
+to show names.
+
+**On a tablet held upright the selection bar shows icons only.** Below a card
+width of 62rem the names move to the tooltip, which a touch screen cannot show.
+Reached on a screen between 640 and about 1000px wide with a touch pointer.
+
+**The selection bar's status line may not be announced by a screen reader.** It is
+mounted together with its text, and a live region that appears already filled is
+often skipped. Reached with a screen reader after pressing Load comments.

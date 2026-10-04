@@ -753,7 +753,7 @@ trustReviewedAt, onFileChange }` plus what its row lists.
 | `file-actions-menu` | The file page's `[...]` menu | File props plus `onRequestClose`, `onDialogOpenChange`. See [Contributing to the file actions menu](#contributing-to-the-file-actions-menu) |
 | `folder-actions-menu` | The folder toolbar's **Add** menu, below the core rows | See [Contributing to the add menu](#contributing-to-the-add-menu) |
 | `folder-bulk-actions-menu` | The folder toolbar's `…` menu, below the core rows. Only on a folder or the drive root | See [Contributing to the folder `…` menu](#contributing-to-the-folder--menu) |
-| `selection-bar-actions` | Mounted invisibly by the selection bar, outside the trash view | `{ drive, files }`, the selected `FileItem`s in list order. Entries render `null` and offer an action. See [Contributing to the selection bar](#contributing-to-the-selection-bar) |
+| `selection-bar-actions` | Mounted invisibly by the selection bar, outside the trash view | `{ drive, files, selectedIds }`: `files` are the selected `FileItem`s the list has loaded, in list order, and `selectedIds` is the selection itself. Entries render `null` and offer an action. See [Contributing to the selection bar](#contributing-to-the-selection-bar) |
 | `markdown-export-sections` | Mounted invisibly by the selection bar's **Export as Markdown** dialog | `{ drive }`. Entries render `null` and offer a section provider. See [Contributing to the Markdown export](#contributing-to-the-markdown-export) |
 | `document-viewer-actions` | Top bar of the full-screen PDF viewer | File props plus `documentCaptureController` and `tone: "on-dark"`. The bar is black: draw a transparent control with a white glyph. The controller publishes the page in view or the selected text, never an anchor |
 | `header-actions` | App header | `{ drive }` |
@@ -1023,6 +1023,7 @@ export default function YourSelectionAction({ drive, files }) {
 - On a narrow screen the action is only in the `…` menu, and it is never drawn as a destructive action.
 - After `run` the host does nothing: it keeps the selection and shows no toast. Report the result in `status`, which the bar shows in a line above the actions while it is set, or in your own component.
 - Pass `null` to withdraw the offer. The slot is not mounted in the trash.
+- `files` is emptied while the folder list refetches, which an action that changes files triggers. Decide that the selection changed from `selectedIds`, never from `files`, and treat `files.length < selectedIds.length` as a list that is still loading.
 - Do not ask the server about every selection change to decide whether to offer: the bar is redrawn on every click.
 
 ### Contributing to the Markdown export

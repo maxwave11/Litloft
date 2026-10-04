@@ -8,7 +8,7 @@ Invariants:
 - Nothing is requested before the button is pressed; a press sends one request per 1000 selected `.loft` files and none when the selection holds no `.loft`.
 - After a press that queued N > 0 videos, one `files.updated` is emitted naming exactly those N; after a press that queued none, nothing is emitted.
 - After a press the button cannot send another request until the selection changes, except after a failed request.
-- With no addon offering an action, the selection bar's actions, their order and the narrow-screen overflow are exactly as before.
+- With no addon offering an action, the selection bar's set of actions, their order and what the narrow-screen overflow holds are as before.
 - An addon action never stays on the bar on a narrow screen, is never drawn as danger, and is never shown in the trash view.
 - Core code names no addon and no action.
 
@@ -17,3 +17,8 @@ Invariants added:
 - Every action on the bar is fully visible at every viewport width from 640px up: the row never scrolls or clips, with or without an addon action, in English and Japanese.
 - A button's name is drawn only where the card is wide enough for all of them; where it is not, each button has the same name as its tooltip.
 - An addon action's label does not change with its result; the result is in the status line above the actions, which is absent while no action sets one.
+
+Revision after round 2, 2026-10-04, on the user's approval of the triage. F1 of round 2 proposed the first; the second restates one that the width change made untrue.
+Invariants added:
+- The state of the Load comments action (its status line and its disabled button) survives the folder list refetching, and changes only when the selected ids change.
+- The trash bar's buttons are named at every width.

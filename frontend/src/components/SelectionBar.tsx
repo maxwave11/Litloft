@@ -39,6 +39,8 @@ export interface BulkAction {
   displayLabel?: string;
   onClick: () => void;
   disabled?: boolean;
+  /** Draw the name at every width: for a bar with room to spare. */
+  alwaysNamed?: boolean;
   danger?: boolean;
   startsGroup?: boolean;
   /**
@@ -198,6 +200,7 @@ export function SelectionBar({
           icon: RotateCcw,
           label: tt("restore"),
           onClick: handleBatchRestore,
+          alwaysNamed: true,
           keepOnBar: true,
         },
         {
@@ -206,6 +209,7 @@ export function SelectionBar({
           label: tt("purge"),
           onClick: () => setPurgeOpen(true),
           danger: true,
+          alwaysNamed: true,
           startsGroup: true,
           keepOnBar: true,
         },
@@ -485,7 +489,7 @@ export function SelectionBar({
       {selectedFiles && !isTrashView && (
         <AddonSlot
           id={SELECTION_ACTIONS_SLOT}
-          props={{ drive, files: selectedFiles }}
+          props={{ drive, files: selectedFiles, selectedIds: ids }}
         />
       )}
 
@@ -506,7 +510,7 @@ export function SelectionBar({
  * are icons and the name is the tooltip. Written as one literal because
  * Tailwind reads classes from source text.
  */
-const LABEL_VISIBILITY = "hidden max-sm:inline @min-[990px]:inline";
+const LABEL_VISIBILITY = "hidden max-sm:inline @min-[62rem]:inline";
 
 function visibility(action: BulkAction) {
   return action.keepOnBar
@@ -538,12 +542,12 @@ function ActionButton({
         disabled={action.disabled}
         // `min-h-11` rather than a hit-area overhang: these sit shoulder to
         // shoulder, and adjacent pseudo-elements overlap, the later one winning.
-        className={`flex shrink-0 items-center gap-1.5 rounded-2xl px-3 py-2 text-sm transition-colors pointer-coarse:min-h-11 disabled:opacity-50 disabled:hover:bg-transparent ${colorClass} ${className}`}
+        className={`flex shrink-0 items-center gap-1.5 rounded-2xl px-3 py-2 text-sm transition-colors pointer-coarse:min-h-11 pointer-coarse:min-w-11 disabled:opacity-50 disabled:hover:bg-transparent ${colorClass} ${className}`}
         aria-label={action.label}
         title={action.label}
       >
         <Icon size={15} />
-        <span className={LABEL_VISIBILITY}>{action.displayLabel ?? action.label}</span>
+        <span className={action.alwaysNamed ? undefined : LABEL_VISIBILITY}>{action.displayLabel ?? action.label}</span>
       </button>
     </>
   );

@@ -216,7 +216,7 @@ describe("SelectionBar at 375px", () => {
   const BUTTON_BASE = [
     "flex", "shrink-0", "items-center", "gap-1.5", "rounded-2xl",
     "px-3", "py-2", "text-sm", "transition-colors", "pointer-coarse:min-h-11",
-    "disabled:opacity-50", "disabled:hover:bg-transparent",
+    "pointer-coarse:min-w-11", "disabled:opacity-50", "disabled:hover:bg-transparent",
   ];
   const BUTTON_PLAIN = [
     "text-text-muted", "hover:bg-bg-elevated", "hover:text-text-primary",
@@ -225,7 +225,7 @@ describe("SelectionBar at 375px", () => {
   const BUTTON_DANGER = ["text-danger", "hover:bg-accent/10", "active:bg-accent/15"];
   /** The one recipe that takes a control off the bar below 640px. */
   const WIDE_ONLY = ["hidden", "sm:flex"];
-  const LABEL_RECIPE = ["hidden", "max-sm:inline", "@min-[990px]:inline"];
+  const LABEL_RECIPE = ["hidden", "max-sm:inline", "@min-[62rem]:inline"];
   const DIVIDER_BASE = ["mx-0.5", "h-5", "w-px", "shrink-0", "bg-bg-border"];
 
   const dividerRecipes = (root: HTMLElement) =>
