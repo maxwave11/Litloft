@@ -30,6 +30,13 @@ interface AddonSlotsContextValue {
   catalogueDrive: string | null | undefined;
   slots: Record<string, SlotEntry[]>;
   loading: boolean;
+  /**
+   * True until every active addon's slot module has been loaded or has
+   * failed to. A module can register something at import time, such as a
+   * `.loft` player, so a consumer that would otherwise fall back must wait
+   * for this first. False without a provider: there is nothing to wait for.
+   */
+  modulesPending: boolean;
   getSlotEntries: (slotId: string) => SlotEntry[];
   hasSlot: (slotId: string) => boolean;
 }
@@ -43,6 +50,7 @@ const AddonSlotsContext = createContext<AddonSlotsContextValue>({
   catalogueDrive: undefined,
   slots: {},
   loading: true,
+  modulesPending: false,
   getSlotEntries: () => [],
   hasSlot: () => false,
 });
@@ -51,12 +59,14 @@ export function AddonSlotsProvider({ children }: { children: ReactNode }) {
   const [addons, setAddons] = useState<AddonsStatus["addons"]>({});
   const [slots, setSlots] = useState<Record<string, SlotEntry[]>>({});
   const [loading, setLoading] = useState(true);
+  const [modulesPending, setModulesPending] = useState(true);
   const [catalogueDrive, setCatalogueDrive] = useState<string | null | undefined>(undefined);
   const drive = useCurrentDrive();
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    setModulesPending(true);
     getAddonsStatus(drive).then((status) => {
       if (cancelled) return;
       setAddons(status.addons);
@@ -65,12 +75,13 @@ export function AddonSlotsProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       // Eagerly preload each active addon's slot module. Some addons
       // (e.g. media_import) rely on side-effect imports inside slots.ts
-      // to register .loft players before LoftPlayer dispatches; without
-      // this preload, the registration would only fire after the user
-      // hits a file detail page, racing the LoftPlayer mount.
-      Object.keys(status.addons).forEach((name) => {
-        if (!VALID_ADDON_NAME_FOR_PRELOAD.test(name)) return;
-        import(`@/addons/${name}/slots.ts`).catch(() => {});
+      // to register .loft players; `modulesPending` tells LoftPlayer to wait
+      // for them rather than draw its fallback.
+      const loads = Object.keys(status.addons)
+        .filter((name) => VALID_ADDON_NAME_FOR_PRELOAD.test(name))
+        .map((name) => import(`@/addons/${name}/slots.ts`));
+      void Promise.allSettled(loads).then(() => {
+        if (!cancelled) setModulesPending(false);
       });
     });
     return () => {
@@ -86,7 +97,15 @@ export function AddonSlotsProvider({ children }: { children: ReactNode }) {
 
   return (
     <AddonSlotsContext.Provider
-      value={{ addons, catalogueDrive, slots, loading, getSlotEntries, hasSlot }}
+      value={{
+        addons,
+        catalogueDrive,
+        slots,
+        loading,
+        modulesPending,
+        getSlotEntries,
+        hasSlot,
+      }}
     >
       {children}
     </AddonSlotsContext.Provider>

@@ -1133,7 +1133,10 @@ provider's URLs:
 - Frontend: `registerLoftPlayer(name, Component)` from
   `@/components/loft/playerRegistry`, imported from `slots.ts`. The component
   receives `LoftEmbedProps` (`frontend/src/components/loft/types.ts`). The
-  name `generic` is reserved; it renders a link card.
+  name `generic` is reserved; it renders a link card. While the preloaded
+  `slots.ts` files are still loading, an unregistered provider shows the
+  poster box instead of the link card, and a player that registers later
+  replaces the card.
 
 `addons/media_import` registers YouTube and Vimeo this way.
 

@@ -8,6 +8,7 @@ export const GENERIC_PROVIDER = "generic";
 // .loft file on disk — return undefined instead of resolving to a
 // prototype property.
 const players = new Map<string, ComponentType<LoftEmbedProps>>();
+const listeners = new Set<() => void>();
 
 export function registerLoftPlayer(
   name: string,
@@ -19,6 +20,14 @@ export function registerLoftPlayer(
     );
   }
   players.set(name, Component);
+  for (const listener of listeners) listener();
+}
+
+export function subscribePlayers(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
 }
 
 export function getLoftPlayer(

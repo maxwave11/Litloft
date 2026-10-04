@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { getStreamUrl } from "@/lib/api";
 import type { MediaController } from "@/lib/mediaController";
 import type { MediaSessionMetadataInput } from "@/lib/mediaSession";
+import { useAddonSlots } from "@/components/AddonSlotsProvider";
 import GenericLinkCard from "./GenericLinkCard";
-import { getLoftPlayer } from "./playerRegistry";
+import { getLoftPlayer, subscribePlayers } from "./playerRegistry";
 
 interface LoftContent {
   provider: string;
@@ -35,6 +36,15 @@ export default function LoftPlayer({
 }: LoftPlayerProps) {
   const [content, setContent] = useState<LoftContent | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { modulesPending } = useAddonSlots();
+  // A player can register after this has rendered: addons are loaded on
+  // demand, and a link opened cold reads the file before they arrive.
+  const provider = content?.provider;
+  const Player = useSyncExternalStore(
+    subscribePlayers,
+    () => (provider === undefined ? null : getLoftPlayer(provider)),
+    () => null,
+  );
 
   useEffect(() => {
     fetch(getStreamUrl(fileId), { credentials: "include" })
@@ -51,7 +61,7 @@ export default function LoftPlayer({
     );
   }
 
-  if (!content) {
+  if (!content || (!Player && modulesPending)) {
     return (
       <div
         data-testid="loft-loading"
@@ -61,7 +71,6 @@ export default function LoftPlayer({
     );
   }
 
-  const Player = getLoftPlayer(content.provider);
   if (!Player) {
     return <GenericLinkCard fileId={fileId} url={content.url} />;
   }
