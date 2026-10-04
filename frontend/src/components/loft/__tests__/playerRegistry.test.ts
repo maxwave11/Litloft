@@ -5,6 +5,7 @@ import {
   getLoftPlayer,
   registerLoftPlayer,
   registeredPlayerNames,
+  subscribePlayers,
 } from "../playerRegistry";
 
 const Stub = () => null;
@@ -30,6 +31,18 @@ describe("playerRegistry", () => {
     registerLoftPlayer("youtube", Other);
     expect(getLoftPlayer("youtube")).toBe(Other);
     expect(registeredPlayerNames().filter((n) => n === "youtube")).toHaveLength(1);
+  });
+
+  it("tells a subscriber when a player registers, until it unsubscribes", () => {
+    let calls = 0;
+    const unsubscribe = subscribePlayers(() => {
+      calls += 1;
+    });
+    registerLoftPlayer("youtube", Stub);
+    expect(calls).toBe(1);
+    unsubscribe();
+    registerLoftPlayer("vimeo", Other);
+    expect(calls).toBe(1);
   });
 
   it("rejects empty name", () => {
