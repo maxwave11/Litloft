@@ -3,6 +3,9 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { SelectionBar, groupSurvivesNarrow } from "../SelectionBar";
 import { batchTag } from "@/lib/api";
 import { confirmConversionThenEnter } from "@/__tests__/helpers/imeEnter";
+import { Sparkles } from "lucide-react";
+import { act } from "@testing-library/react";
+import { resetSelectionActions, useOfferSelectionAction } from "@/lib/selectionActions";
 
 vi.mock("@/lib/api", () => ({
   batchDelete: vi.fn().mockResolvedValue({ deleted: 2, errors: [] }),
@@ -41,6 +44,17 @@ vi.mock("../ClipboardProvider", () => ({
 vi.mock("../CollectionPicker", () => ({
   CollectionPicker: ({ open }: any) =>
     open ? <div data-testid="collection-picker" /> : null,
+}));
+
+vi.mock("../AddonSlot", () => ({
+  AddonSlot: ({ id, props }: { id: string; props: { drive: string; files: { id: string }[] } }) => (
+    <div
+      data-testid="addon-slot"
+      data-id={id}
+      data-drive={props.drive}
+      data-files={props.files.map((f) => f.id).join(",")}
+    />
+  ),
 }));
 
 vi.mock("../markdownExport", () => ({
@@ -202,6 +216,7 @@ describe("SelectionBar at 375px", () => {
   const BUTTON_BASE = [
     "flex", "shrink-0", "items-center", "gap-1.5", "rounded-2xl",
     "px-3", "py-2", "text-sm", "transition-colors", "pointer-coarse:min-h-11",
+    "disabled:opacity-50", "disabled:hover:bg-transparent",
   ];
   const BUTTON_PLAIN = [
     "text-text-muted", "hover:bg-bg-elevated", "hover:text-text-primary",
@@ -403,5 +418,110 @@ describe("groupSurvivesNarrow", () => {
     ["Xxkk", 0, true, "actions after it in the same group still count"],
   ])("%s at %d → %s (%s)", (spec, index, expected) => {
     expect(groupSurvivesNarrow(g(spec as string), index as number)).toBe(expected);
+  });
+});
+
+describe("SelectionBar addon actions", () => {
+  const run = vi.fn();
+
+  function Offer({ disabled = false, id = "demo.load" }: { disabled?: boolean; id?: string }) {
+    useOfferSelectionAction({
+      id,
+      label: "Load things for 3 videos",
+      displayLabel: "Load things",
+      icon: Sparkles,
+      order: 20,
+      disabled,
+      run,
+    });
+    return null;
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    act(() => resetSelectionActions());
+  });
+
+  it("mounts the slot with the drive and the selected files, in the order given", () => {
+    render(<SelectionBar {...defaultProps} />);
+    const slot = screen.getByTestId("addon-slot");
+    expect(slot).toHaveAttribute("data-id", "selection-bar-actions");
+    expect(slot).toHaveAttribute("data-drive", "main");
+    expect(slot).toHaveAttribute("data-files", "f1,f2,f3");
+  });
+
+  it("mounts no slot in the trash or without the selected files", () => {
+    const { rerender } = render(<SelectionBar {...defaultProps} isTrashView />);
+    expect(screen.queryByTestId("addon-slot")).not.toBeInTheDocument();
+    rerender(<SelectionBar {...defaultProps} selectedFiles={undefined} />);
+    expect(screen.queryByTestId("addon-slot")).not.toBeInTheDocument();
+  });
+
+  it("draws an offered action between Export and Copy, and runs it", () => {
+    const { container } = render(
+      <>
+        <SelectionBar {...defaultProps} />
+        <Offer />
+      </>,
+    );
+    const drawn = [...container.querySelectorAll("[data-bar]")].map((el) =>
+      el.getAttribute("aria-label"),
+    );
+    expect(drawn).toEqual([
+      "Tagging", "Rename", "Add to collection", "Export as Markdown",
+      "Load things for 3 videos", "Copy", "Cut", "Move", "Move to Trash",
+    ]);
+    const button = screen.getByLabelText("Load things for 3 videos");
+    expect(button).toHaveTextContent("Load things");
+    fireEvent.click(button);
+    expect(run).toHaveBeenCalledTimes(1);
+    expect(defaultProps.onClear).not.toHaveBeenCalled();
+    expect(defaultProps.onComplete).not.toHaveBeenCalled();
+  });
+
+  it("leaves an offered action off the narrow bar, as a plain row in the overflow", () => {
+    render(
+      <>
+        <SelectionBar {...defaultProps} />
+        <Offer />
+      </>,
+    );
+    const button = screen.getByLabelText("Load things for 3 videos");
+    expect(button).toHaveAttribute("data-bar", "wide");
+    expect(button.getAttribute("class")).not.toContain("text-danger");
+
+    fireEvent.click(screen.getByLabelText("More actions for the selection"));
+    const row = screen.getByRole("menuitem", { name: "Load things for 3 videos" });
+    expect(row.getAttribute("class")).not.toContain("text-danger");
+    fireEvent.click(row);
+    expect(run).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses a click on a disabled offered action, on the bar and in the overflow", () => {
+    render(
+      <>
+        <SelectionBar {...defaultProps} />
+        <Offer disabled />
+      </>,
+    );
+    const button = screen.getByLabelText("Load things for 3 videos");
+    expect(button).toBeDisabled();
+    fireEvent.click(button);
+
+    fireEvent.click(screen.getByLabelText("More actions for the selection"));
+    const row = screen.getByRole("menuitem", { name: "Load things for 3 videos" });
+    expect(row).toBeDisabled();
+    fireEvent.click(row);
+    expect(run).not.toHaveBeenCalled();
+  });
+
+  it("draws no addon action in the trash", () => {
+    render(
+      <>
+        <SelectionBar {...defaultProps} isTrashView />
+        <Offer />
+      </>,
+    );
+    expect(screen.queryByLabelText("Load things for 3 videos")).not.toBeInTheDocument();
   });
 });

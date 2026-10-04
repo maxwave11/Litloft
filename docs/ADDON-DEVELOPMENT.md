@@ -753,6 +753,7 @@ trustReviewedAt, onFileChange }` plus what its row lists.
 | `file-actions-menu` | The file page's `[...]` menu | File props plus `onRequestClose`, `onDialogOpenChange`. See [Contributing to the file actions menu](#contributing-to-the-file-actions-menu) |
 | `folder-actions-menu` | The folder toolbar's **Add** menu, below the core rows | See [Contributing to the add menu](#contributing-to-the-add-menu) |
 | `folder-bulk-actions-menu` | The folder toolbar's `…` menu, below the core rows. Only on a folder or the drive root | See [Contributing to the folder `…` menu](#contributing-to-the-folder--menu) |
+| `selection-bar-actions` | Mounted invisibly by the selection bar, outside the trash view | `{ drive, files }`, the selected `FileItem`s in list order. Entries render `null` and offer an action. See [Contributing to the selection bar](#contributing-to-the-selection-bar) |
 | `markdown-export-sections` | Mounted invisibly by the selection bar's **Export as Markdown** dialog | `{ drive }`. Entries render `null` and offer a section provider. See [Contributing to the Markdown export](#contributing-to-the-markdown-export) |
 | `document-viewer-actions` | Top bar of the full-screen PDF viewer | File props plus `documentCaptureController` and `tone: "on-dark"`. The bar is black: draw a transparent control with a white glyph. The controller publishes the page in view or the selected text, never an anchor |
 | `header-actions` | App header | `{ drive }` |
@@ -996,6 +997,32 @@ into the folder; this one acts on the files already listed.
 The slot is shown only on a folder or the drive root, not on search results,
 a tag filter or a special view. Return `null` when there is nothing to act on;
 the separator goes with it.
+
+### Contributing to the selection bar
+
+`selection-bar-actions` is mounted once, invisibly, by the bar that appears when files are selected, with `{ drive, files }`. Its entries render `null` and offer an action through `@/lib/selectionActions`:
+
+```tsx
+import { useOfferSelectionAction } from "@/lib/selectionActions";
+
+export default function YourSelectionAction({ drive, files }) {
+  useOfferSelectionAction({
+    id: "your_addon.action",  // unique across addons; prefix it with your addon
+    label: t("label"),       // already translated
+    icon: SomeLucideIcon,
+    order: 20,               // ascending; ties by id
+    disabled: busy,
+    run: () => void handleRun(),
+  });
+  return null;
+}
+```
+
+- The action is drawn between **Export** and **Copy**. A `label` is the button's name and the row's text in the `…` menu; give `displayLabel` for a shorter text on the bar.
+- On a narrow screen the action is only in the `…` menu, and it is never drawn as a destructive action.
+- After `run` the host does nothing: it keeps the selection and shows no toast. Report the result in `label`, which may change, or in your own component.
+- Pass `null` to withdraw the offer. The slot is not mounted in the trash.
+- Do not ask the server about every selection change to decide whether to offer: the bar is redrawn on every click.
 
 ### Contributing to the Markdown export
 
@@ -1366,6 +1393,7 @@ Slot entries each addon declares, for reference when designing your own.
 | `knowledge` | `active-summary-view` | `knowledge-active-summary` |
 | `media_import` | `loft-metadata` | `loft-metadata` |
 | `media_import` | `markdown-export-sections` | `comments-export` |
+| `media_import` | `selection-bar-actions` | `comments-load` |
 | `media_import` | `folder-actions-menu` | `media-import-url` |
 | `media_import` | `file-actions-menu` | `loft-refresh` |
 | `cloud-sync` | `dashboard-widgets` | `cloud-sync` |

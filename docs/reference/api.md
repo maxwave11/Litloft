@@ -287,7 +287,7 @@ Channel history import: the media_import addon exposes drive-scoped `POST` and `
 
 ## Addon YouTube comments
 
-The media_import addon exposes drive-scoped `GET /api/addons/media_import/link/{file_id}/comments`, the saved comments of a YouTube `.loft`, and `POST /api/addons/media_import/link/{file_id}/comments/refresh`, which queues a fetch and answers `202` with `{ "status": "queued" }` or `{ "status": "already_queued" }`. The response fields and the errors are in [Media Import](../addons/media-import.md#youtube-comments).
+The media_import addon exposes drive-scoped `GET /api/addons/media_import/link/{file_id}/comments`, the saved comments of a YouTube `.loft`, and `POST /api/addons/media_import/link/{file_id}/comments/refresh`, which queues a fetch and answers `202` with `{ "status": "queued" }` or `{ "status": "already_queued" }`. `POST /api/addons/media_import/link/comments/load-missing` takes `{ "file_ids": [...] }` (1–1000 IDs) and queues the YouTube `.loft` files among them that have no saved comments, answering `202` with `{ "queued": N, "skipped": M }`. The response fields and the errors are in [Media Import](../addons/media-import.md#youtube-comments).
 
 ## Addon video card metadata
 

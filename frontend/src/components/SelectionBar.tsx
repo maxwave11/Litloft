@@ -19,7 +19,9 @@ import { useTranslations } from "next-intl";
 
 import { batchDelete, batchGetFiles, batchMove, batchPurge, batchRestore, batchTag } from "@/lib/api";
 import { useImeKeyGuard } from "@/lib/ime";
+import { useSelectionActions } from "@/lib/selectionActions";
 import { ActionMenuItem } from "./ActionMenuItem";
+import { AddonSlot } from "./AddonSlot";
 import { BatchRenameDialog } from "./BatchRenameDialog";
 import { Button } from "./Button";
 import { useClipboard } from "./ClipboardProvider";
@@ -36,6 +38,7 @@ export interface BulkAction {
   label: string;
   displayLabel?: string;
   onClick: () => void;
+  disabled?: boolean;
   danger?: boolean;
   startsGroup?: boolean;
   /**
@@ -71,6 +74,8 @@ export function groupSurvivesNarrow(
   return false;
 }
 
+export const SELECTION_ACTIONS_SLOT = "selection-bar-actions";
+
 export function SelectionBar({
   count,
   selectedIds,
@@ -101,6 +106,7 @@ export function SelectionBar({
   const [exportOpen, setExportOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLButtonElement>(null);
+  const addonActions = useSelectionActions();
 
   if (count === 0) return null;
 
@@ -237,6 +243,15 @@ export function SelectionBar({
               },
             ]
           : []),
+        ...addonActions.map((action, index) => ({
+          id: action.id,
+          icon: action.icon,
+          label: action.label,
+          displayLabel: action.displayLabel,
+          onClick: action.run,
+          disabled: action.disabled,
+          startsGroup: index === 0,
+        })),
         {
           id: "copy",
           icon: ClipboardCopy,
@@ -300,6 +315,7 @@ export function SelectionBar({
               icon={action.icon}
               label={action.label}
               danger={action.danger}
+              disabled={action.disabled}
               onClick={() => {
                 closeMore();
                 action.onClick();
@@ -457,6 +473,13 @@ export function SelectionBar({
         onCancel={() => setRenameOpen(false)}
       />
 
+      {selectedFiles && !isTrashView && (
+        <AddonSlot
+          id={SELECTION_ACTIONS_SLOT}
+          props={{ drive, files: selectedFiles }}
+        />
+      )}
+
       {exportOpen && selectedFiles && (
         <MarkdownExport
           files={selectedFiles}
@@ -495,9 +518,10 @@ function ActionButton({
       <button
         data-bar={bar}
         onClick={action.onClick}
+        disabled={action.disabled}
         // `min-h-11` rather than a hit-area overhang: these sit shoulder to
         // shoulder, and adjacent pseudo-elements overlap, the later one winning.
-        className={`flex shrink-0 items-center gap-1.5 rounded-2xl px-3 py-2 text-sm transition-colors pointer-coarse:min-h-11 ${colorClass} ${className}`}
+        className={`flex shrink-0 items-center gap-1.5 rounded-2xl px-3 py-2 text-sm transition-colors pointer-coarse:min-h-11 disabled:opacity-50 disabled:hover:bg-transparent ${colorClass} ${className}`}
         aria-label={action.label}
       >
         <Icon size={15} />
