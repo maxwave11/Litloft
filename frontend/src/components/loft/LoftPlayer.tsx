@@ -16,6 +16,7 @@ export interface LoftPlayerProps {
   fileId: string;
   onMediaController?: (mc: MediaController | null) => void;
   initialTime?: number;
+  autoPlay?: boolean;
   durationHint?: number | null;
   onEnded?: () => void;
   mediaSessionMetadata?: MediaSessionMetadataInput;
@@ -26,6 +27,7 @@ export default function LoftPlayer({
   fileId,
   onMediaController,
   initialTime,
+  autoPlay,
   durationHint,
   onEnded,
   mediaSessionMetadata,
@@ -70,6 +72,7 @@ export default function LoftPlayer({
       url={content.url}
       onMediaController={onMediaController}
       initialTime={initialTime}
+      autoPlay={autoPlay}
       durationHint={durationHint}
       onEnded={onEnded}
       mediaSessionMetadata={mediaSessionMetadata}

@@ -18,6 +18,7 @@ export interface LoftEmbedProps {
    * in the initial src URL.
    */
   initialTime?: number;
+  autoPlay?: boolean;
   /**
    * Embeds cannot trust the player for this. The YouTube IFrame API
    * reports 0 until metadata loads — potentially after a pre-roll ad has

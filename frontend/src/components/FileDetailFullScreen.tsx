@@ -178,7 +178,7 @@ export function FileDetailFullScreen({ fileId }: FileDetailFullScreenProps) {
             initialSection={initialSection}
             highlight={highlight}
             onEnded={hasCollection ? handleMediaEnded : undefined}
-            autoPlay={hasCollection}
+            autoPlay={hasCollection || initialTime !== undefined}
             onRequestImageGallery={() => setGalleryOpen(true)}
             onAfterDelete={handleAfterDelete}
             onBack={handleBack}

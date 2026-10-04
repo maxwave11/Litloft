@@ -118,6 +118,7 @@ export function RightPaneFile({ fileId, drive }: RightPaneFileProps) {
             fileId={fileId}
             drive={drive}
             initialTime={initialTime}
+            autoPlay={initialTime !== undefined}
             initialPage={initialPage}
             initialSection={initialSection}
             highlight={highlight}

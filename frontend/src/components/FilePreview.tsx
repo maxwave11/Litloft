@@ -120,6 +120,7 @@ export function FilePreview({
             fileId={file.id}
             onMediaController={relayMc}
             initialTime={initialTime}
+            autoPlay={autoPlay}
             durationHint={file.duration}
             posterUrl={posterUrl}
             onEnded={onEnded}

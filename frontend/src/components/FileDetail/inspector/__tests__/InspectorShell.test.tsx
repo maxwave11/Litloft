@@ -460,3 +460,55 @@ describe("InspectorShell — no addon ids in core", () => {
     expect(screen.getByText("invented body")).toBeInTheDocument();
   });
 });
+
+describe("InspectorShell with a preferred tab", () => {
+  const shell = (available: boolean, resetKey = "f1") => (
+    <InspectorShell
+      header={<div data-testid="header">header</div>}
+      tabs={buildInspectorTabs({
+        info,
+        addonTabs: [
+          { entry: entry("a"), label: "A", content: <p>a body</p>, available },
+        ],
+      })}
+      resetKey={resetKey}
+      preferredId="a"
+    />
+  );
+
+  it("takes the selection when the preferred tab is listed only after its occupant reports", () => {
+    const { rerender } = render(shell(false));
+    expect(screen.getByText("info body")).toBeVisible();
+
+    rerender(shell(true));
+
+    expect(screen.getByRole("tab", { name: "A" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  it("gives way to the tab the viewer picks", () => {
+    const { rerender } = render(shell(true));
+    fireEvent.click(screen.getByRole("tab", { name: "Info" }));
+
+    rerender(shell(true));
+
+    expect(screen.getByRole("tab", { name: "Info" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  it("opens the next file on the preferred tab again", () => {
+    const { rerender } = render(shell(true));
+    fireEvent.click(screen.getByRole("tab", { name: "Info" }));
+
+    rerender(shell(true, "f2"));
+
+    expect(screen.getByRole("tab", { name: "A" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+});

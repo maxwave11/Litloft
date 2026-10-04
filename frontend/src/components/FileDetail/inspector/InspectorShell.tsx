@@ -23,6 +23,8 @@ interface InspectorShellProps {
   tabs: InspectorTab[];
   resetKey?: string;
   scroll?: InspectorScroll;
+  /** Selected instead of the first tab until the viewer picks one. */
+  preferredId?: string;
 }
 
 /**
@@ -34,31 +36,35 @@ export function InspectorShell({
   tabs,
   resetKey,
   scroll = "panel",
+  preferredId,
 }: InspectorShellProps) {
   const t = useTranslations("inspector");
   // Only a listed tab can be selected. An unlisted one is mounted so it
   // can keep reporting; giving it the selection would show a panel its
   // own entry has just said is empty.
   const listed = listedTabs(tabs);
-  const firstId = listed[0]?.id ?? "info";
-  const [activeId, setActiveId] = useState<string>(firstId);
+  // Recomputed rather than stored: a preferred tab is often unlisted on the
+  // first render and listed once its occupant reports, and it should take
+  // the selection then, not only if it was there from the start.
+  const defaultId =
+    listed.find((tab) => tab.id === preferredId)?.id ?? listed[0]?.id ?? "info";
+  const [chosenId, setChosenId] = useState<string | null>(null);
   const tabRefs = useRef(new Map<string, HTMLButtonElement>());
 
   useEffect(() => {
-    setActiveId(firstId);
-    // Only on a file change. Naming `firstId` here would also fire when
-    // the strip's composition shifts, which is the selection-preserving
-    // behaviour just below.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setChosenId(null);
   }, [resetKey]);
 
+  const activeId = chosenId ?? defaultId;
   const active = listed.find((tab) => tab.id === activeId) ?? listed[0];
 
   // The selection follows a vanished tab rather than being remembered. Left
   // in state, a dead id springs back the moment its tab returns.
   useEffect(() => {
-    if (active && active.id !== activeId) setActiveId(active.id);
-  }, [active, activeId]);
+    if (chosenId !== null && active && active.id !== chosenId) {
+      setChosenId(active.id);
+    }
+  }, [active, chosenId]);
   const strip = showsTabStrip(tabs);
 
   const onKeyDown = useCallback(
@@ -72,10 +78,10 @@ export function InspectorShell({
       const index = listed.findIndex((tab) => tab.id === active?.id);
       const next = listed[(index + delta + listed.length) % listed.length];
       if (!next) return;
-      setActiveId(next.id);
+      setChosenId(next.id);
       tabRefs.current.get(next.id)?.focus();
     },
-    [listed, active?.id],
+    [listed, active?.id, setChosenId],
   );
 
   const column = scroll === "column";
@@ -162,7 +168,7 @@ export function InspectorShell({
                 // arrows move within it. Every tab being a tab stop is
                 // the thing that makes a long strip tedious to get past.
                 tabIndex={selected ? 0 : -1}
-                onClick={() => setActiveId(tab.id)}
+                onClick={() => setChosenId(tab.id)}
                 className={`whitespace-nowrap border-b-2 px-3 py-2 text-xs font-medium transition-colors pointer-coarse:min-h-11 ${
                   selected
                     ? "border-accent font-semibold text-text-primary"

@@ -302,8 +302,21 @@ export function ShellLayout({
         : [],
     });
 
+  // A link to a moment in the file wants what plays along with it, which is
+  // what `player-side` holds; chosen by slot rather than by name, so core
+  // never asks which addon that is.
+  const preferredTabId =
+    initialTime !== undefined && companionInTabs
+      ? sortSlotEntries(playerSideEntries)[0]?.id
+      : undefined;
+
   const inspector = (
-    <InspectorShell header={meta} tabs={buildTabs(false)} resetKey={fileId} />
+    <InspectorShell
+      header={meta}
+      tabs={buildTabs(false)}
+      resetKey={fileId}
+      preferredId={preferredTabId}
+    />
   );
 
   // Only when actually on mobile, so the sections inside mount exactly
@@ -316,6 +329,7 @@ export function ShellLayout({
       tabs={buildTabs(true)}
       resetKey={fileId}
       scroll="column"
+      preferredId={preferredTabId}
     />
   ) : undefined;
 
