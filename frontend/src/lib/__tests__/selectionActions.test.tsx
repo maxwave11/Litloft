@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { act, renderHook } from "@testing-library/react";
-import { Sparkles } from "lucide-react";
+import { BookOpen, Sparkles } from "lucide-react";
 
 import {
   resetSelectionActions,
@@ -68,10 +68,16 @@ describe("selection actions", () => {
     expect(calls).toEqual(["new"]);
   });
 
-  it("republishes when the label or disabled flag changes", () => {
+  it.each<[string, Partial<SelectionAction>]>([
+    ["label", { label: "changed" }],
+    ["displayLabel", { displayLabel: "short" }],
+    ["order", { order: 99 }],
+    ["disabled", { disabled: true }],
+    ["icon", { icon: BookOpen }],
+  ])("republishes when only the %s changes", (_field, change) => {
     const { result } = renderHook(() => useSelectionActions());
     const hook = offer(action("a", 10));
-    hook.rerender({ ...action("a", 10), label: "changed", disabled: true });
-    expect(result.current[0]).toMatchObject({ label: "changed", disabled: true });
+    hook.rerender({ ...action("a", 10), ...change });
+    expect(result.current[0]).toMatchObject(change);
   });
 });

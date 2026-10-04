@@ -648,3 +648,33 @@ Reached with the keyboard.
 **A click outside the Markdown export dialog throws away the finished
 document.** Opening it again collects everything anew, one request per video
 and source. Reached by clicking the backdrop before pressing Copy.
+
+**Media Import's Load comments may crowd the selection bar on a wide screen.**
+At 640px and up every action is drawn on the bar, in a card that clips, and the
+bar had almost no spare width before the button was added. Move and Move to Trash
+may be cut off, and the label growing to "Loading started (1000)" would move the
+buttons under the pointer. Reported by a review from a static replica of the row,
+not measured in the app. Reached with the addon on, between 640 and about 1000px.
+
+**Media Import's Load comments blocks the backend while it queues a large
+selection.** `enqueue_missing_comments` reads each video in turn without yielding,
+so 1000 videos hold the event loop for about 0.7s on the test database and a
+stream running at that moment can stall. Reached by selecting about a thousand
+videos and pressing it.
+
+**An unexpected error while queueing comments leaves some videos queued with
+their icons grey.** Only a missing file or a refused URL is skipped; any other
+exception ends the request with 500 after the earlier videos were queued and
+before `files.updated` named them. Pressing again reports **Nothing to load**
+for them. Reached only by a database error during the press.
+
+**Videos whose comments can never be loaded are queued again on every press.** A
+first fetch that failed because comments are off or the video is unavailable
+leaves no saved set, so **Load comments** runs it again, and **Loading started
+(N)** never settles to **Nothing to load** for a selection that holds one.
+Reached by selecting such a video and pressing the button more than once.
+
+**A selection of more than 1000 videos can report "Couldn't start" after part of
+it was queued.** The request is sent in chunks of 1000; if a later chunk fails the
+button says it failed although the earlier chunks are loading, and pressing again
+counts only what was left. Reached with a selection over 1000 and a failing request.

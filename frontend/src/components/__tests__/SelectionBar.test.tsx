@@ -472,7 +472,7 @@ describe("SelectionBar addon actions", () => {
       "Load things for 3 videos", "Copy", "Cut", "Move", "Move to Trash",
     ]);
     const button = screen.getByLabelText("Load things for 3 videos");
-    expect(button).toHaveTextContent("Load things");
+    expect(button.querySelector("span")?.textContent).toBe("Load things");
     fireEvent.click(button);
     expect(run).toHaveBeenCalledTimes(1);
     expect(defaultProps.onClear).not.toHaveBeenCalled();
@@ -495,6 +495,7 @@ describe("SelectionBar addon actions", () => {
     expect(row.getAttribute("class")).not.toContain("text-danger");
     fireEvent.click(row);
     expect(run).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("menu")).toBeInTheDocument();
   });
 
   it("refuses a click on a disabled offered action, on the bar and in the overflow", () => {
@@ -513,6 +514,22 @@ describe("SelectionBar addon actions", () => {
     expect(row).toBeDisabled();
     fireEvent.click(row);
     expect(run).not.toHaveBeenCalled();
+  });
+
+  it("starts a group of its own, and keeps one divider on the narrow bar", () => {
+    const { container } = render(
+      <>
+        <SelectionBar {...defaultProps} />
+        <Offer />
+      </>,
+    );
+    const rules = [...container.querySelectorAll("[class~='w-px']")].map((el) =>
+      (el.getAttribute("class") ?? "").split(/\s+/).filter(Boolean),
+    );
+    const base = ["mx-0.5", "h-5", "w-px", "shrink-0", "bg-bg-border"];
+    const hidden = [...base, "hidden", "sm:block"];
+    // Organize / the addon's group (holds Move) / the destructive group.
+    expect(rules).toEqual([hidden, base, hidden]);
   });
 
   it("draws no addon action in the trash", () => {

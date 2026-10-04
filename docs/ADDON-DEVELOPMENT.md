@@ -1019,7 +1019,7 @@ export default function YourSelectionAction({ drive, files }) {
 ```
 
 - The action is drawn between **Export** and **Copy**. A `label` is the button's name and the row's text in the `…` menu; give `displayLabel` for a shorter text on the bar.
-- On a narrow screen the action is only in the `…` menu, and it is never drawn as a destructive action.
+- On a narrow screen the action is only in the `…` menu, and it is never drawn as a destructive action. The menu stays open after `run`, so a `label` that reports the result stays in view.
 - After `run` the host does nothing: it keeps the selection and shows no toast. Report the result in `label`, which may change, or in your own component.
 - Pass `null` to withdraw the offer. The slot is not mounted in the trash.
 - Do not ask the server about every selection change to decide whether to offer: the bar is redrawn on every click.

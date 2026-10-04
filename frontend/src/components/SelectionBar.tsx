@@ -39,6 +39,11 @@ export interface BulkAction {
   displayLabel?: string;
   onClick: () => void;
   disabled?: boolean;
+  /**
+   * Leave the overflow menu open after the click, for an action whose label
+   * reports its own result: closing the menu would hide it.
+   */
+  keepMenuOpen?: boolean;
   danger?: boolean;
   startsGroup?: boolean;
   /**
@@ -250,6 +255,7 @@ export function SelectionBar({
           displayLabel: action.displayLabel,
           onClick: action.run,
           disabled: action.disabled,
+          keepMenuOpen: true,
           startsGroup: index === 0,
         })),
         {
@@ -317,7 +323,7 @@ export function SelectionBar({
               danger={action.danger}
               disabled={action.disabled}
               onClick={() => {
-                closeMore();
+                if (!action.keepMenuOpen) closeMore();
                 action.onClick();
               }}
             />
