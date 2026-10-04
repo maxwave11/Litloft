@@ -649,13 +649,6 @@ Reached with the keyboard.
 document.** Opening it again collects everything anew, one request per video
 and source. Reached by clicking the backdrop before pressing Copy.
 
-**Media Import's Load comments may crowd the selection bar on a wide screen.**
-At 640px and up every action is drawn on the bar, in a card that clips, and the
-bar had almost no spare width before the button was added. Move and Move to Trash
-may be cut off, and the label growing to "Loading started (1000)" would move the
-buttons under the pointer. Reported by a review from a static replica of the row,
-not measured in the app. Reached with the addon on, between 640 and about 1000px.
-
 **Media Import's Load comments blocks the backend while it queues a large
 selection.** `enqueue_missing_comments` reads each video in turn without yielding,
 so 1000 videos hold the event loop for about 0.7s on the test database and a

@@ -225,6 +225,7 @@ describe("SelectionBar at 375px", () => {
   const BUTTON_DANGER = ["text-danger", "hover:bg-accent/10", "active:bg-accent/15"];
   /** The one recipe that takes a control off the bar below 640px. */
   const WIDE_ONLY = ["hidden", "sm:flex"];
+  const LABEL_RECIPE = ["hidden", "max-sm:inline", "@min-[990px]:inline"];
   const DIVIDER_BASE = ["mx-0.5", "h-5", "w-px", "shrink-0", "bg-bg-border"];
 
   const dividerRecipes = (root: HTMLElement) =>
@@ -278,8 +279,9 @@ describe("SelectionBar at 375px", () => {
       (e) => e.getAttribute("data-bar") === "always",
     )) {
       const label = el.querySelector("span")!;
-      // No class at all, rather than "no class I recognise as hiding it".
-      expect(label.getAttribute("class")).toBeNull();
+      // Exact, rather than "no class I recognise as hiding it": the recipe
+      // shows the name below 640px and wherever the card is wide enough.
+      expect(tokens(label)).toEqual(LABEL_RECIPE);
       expect(label.textContent?.trim().length).toBeGreaterThan(0);
     }
   });
@@ -323,7 +325,7 @@ describe("SelectionBar at 375px", () => {
     // The whole chain, pinned rather than searched for `overflow-*`:
     // `contain-paint` clips as hard, and an inline style carries no class.
     expect(chain.map(tokens)).toEqual([
-      ["relative", "mx-auto", "max-w-3xl", "px-3", "pb-3", "sm:pb-4"],
+      ["relative", "mx-auto", "max-w-wide", "px-3", "pb-3", "sm:pb-4"],
       ["fixed", "bottom-0", "left-0", "right-0", "z-50", "animate-slide-up-bar"],
     ]);
     // Classes are not the only way to clip.
@@ -424,11 +426,19 @@ describe("groupSurvivesNarrow", () => {
 describe("SelectionBar addon actions", () => {
   const run = vi.fn();
 
-  function Offer({ disabled = false, id = "demo.load" }: { disabled?: boolean; id?: string }) {
+  function Offer({
+    disabled = false,
+    status,
+    id = "demo.load",
+  }: {
+    disabled?: boolean;
+    status?: string;
+    id?: string;
+  }) {
     useOfferSelectionAction({
       id,
-      label: "Load things for 3 videos",
-      displayLabel: "Load things",
+      label: "Load things",
+      status,
       icon: Sparkles,
       order: 20,
       disabled,
@@ -469,10 +479,9 @@ describe("SelectionBar addon actions", () => {
     );
     expect(drawn).toEqual([
       "Tagging", "Rename", "Add to collection", "Export as Markdown",
-      "Load things for 3 videos", "Copy", "Cut", "Move", "Move to Trash",
+      "Load things", "Copy", "Cut", "Move", "Move to Trash",
     ]);
-    const button = screen.getByLabelText("Load things for 3 videos");
-    expect(button.querySelector("span")?.textContent).toBe("Load things");
+    const button = screen.getByLabelText("Load things");
     fireEvent.click(button);
     expect(run).toHaveBeenCalledTimes(1);
     expect(defaultProps.onClear).not.toHaveBeenCalled();
@@ -486,16 +495,16 @@ describe("SelectionBar addon actions", () => {
         <Offer />
       </>,
     );
-    const button = screen.getByLabelText("Load things for 3 videos");
+    const button = screen.getByLabelText("Load things");
     expect(button).toHaveAttribute("data-bar", "wide");
     expect(button.getAttribute("class")).not.toContain("text-danger");
 
     fireEvent.click(screen.getByLabelText("More actions for the selection"));
-    const row = screen.getByRole("menuitem", { name: "Load things for 3 videos" });
+    const row = screen.getByRole("menuitem", { name: "Load things" });
     expect(row.getAttribute("class")).not.toContain("text-danger");
     fireEvent.click(row);
     expect(run).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole("menu")).toBeInTheDocument();
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 
   it("refuses a click on a disabled offered action, on the bar and in the overflow", () => {
@@ -505,12 +514,12 @@ describe("SelectionBar addon actions", () => {
         <Offer disabled />
       </>,
     );
-    const button = screen.getByLabelText("Load things for 3 videos");
+    const button = screen.getByLabelText("Load things");
     expect(button).toBeDisabled();
     fireEvent.click(button);
 
     fireEvent.click(screen.getByLabelText("More actions for the selection"));
-    const row = screen.getByRole("menuitem", { name: "Load things for 3 videos" });
+    const row = screen.getByRole("menuitem", { name: "Load things" });
     expect(row).toBeDisabled();
     fireEvent.click(row);
     expect(run).not.toHaveBeenCalled();
@@ -532,6 +541,45 @@ describe("SelectionBar addon actions", () => {
     expect(rules).toEqual([hidden, base, hidden]);
   });
 
+  it("names every bar button by tooltip as well, for the widths that show only icons", () => {
+    const { container } = render(
+      <>
+        <SelectionBar {...defaultProps} />
+        <Offer />
+      </>,
+    );
+    const buttons = [...container.querySelectorAll("[data-bar]")];
+    expect(buttons).toHaveLength(9);
+    for (const el of buttons) {
+      expect(el.getAttribute("title")).toBe(el.getAttribute("aria-label"));
+    }
+  });
+
+  it("shows an offered status above the actions, and no line without one", () => {
+    const { rerender } = render(
+      <>
+        <SelectionBar {...defaultProps} />
+        <Offer />
+      </>,
+    );
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+
+    rerender(
+      <>
+        <SelectionBar {...defaultProps} />
+        <Offer status="Loading started (3)" />
+      </>,
+    );
+    expect(screen.getByRole("status")).toHaveTextContent("Loading started (3)");
+    expect(screen.getByLabelText("Load things")).toHaveAttribute("title", "Load things");
+  });
+
+  it("lets the card measure itself, so the names appear only when they fit", () => {
+    const { container } = render(<SelectionBar {...defaultProps} />);
+    const card = container.querySelector("[class~='overflow-hidden']")!;
+    expect((card.getAttribute("class") ?? "").split(/\s+/)).toContain("@container");
+  });
+
   it("draws no addon action in the trash", () => {
     render(
       <>
@@ -539,6 +587,6 @@ describe("SelectionBar addon actions", () => {
         <Offer />
       </>,
     );
-    expect(screen.queryByLabelText("Load things for 3 videos")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Load things")).not.toBeInTheDocument();
   });
 });

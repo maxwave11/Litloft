@@ -70,7 +70,7 @@ describe("selection actions", () => {
 
   it.each<[string, Partial<SelectionAction>]>([
     ["label", { label: "changed" }],
-    ["displayLabel", { displayLabel: "short" }],
+    ["status", { status: "Loading started (2)" }],
     ["order", { order: 99 }],
     ["disabled", { disabled: true }],
     ["icon", { icon: BookOpen }],

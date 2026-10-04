@@ -14,10 +14,14 @@ import type { LucideIcon } from "lucide-react";
 export interface SelectionAction {
   /** Unique across addons; prefix it with the addon. */
   id: string;
-  /** Already translated. The overflow menu row and the button's aria-label. */
+  /**
+   * Already translated and stable: the button's name, its tooltip and the
+   * overflow menu row. A label that changes with a result would change the
+   * bar's width; put the result in `status`.
+   */
   label: string;
-  /** Shorter text for the bar; falls back to `label`. */
-  displayLabel?: string;
+  /** Already translated. A line the bar shows above the actions while set. */
+  status?: string;
   icon: LucideIcon;
   /** Ascending; ties fall back to `id` so mount order never reorders the bar. */
   order: number;
@@ -98,7 +102,7 @@ export function useOfferSelectionAction(action: SelectionAction | null): void {
 
   const id = action?.id;
   const label = action?.label;
-  const displayLabel = action?.displayLabel;
+  const status = action?.status;
   const icon = action?.icon;
   const order = action?.order;
   const disabled = action?.disabled;
@@ -115,14 +119,14 @@ export function useOfferSelectionAction(action: SelectionAction | null): void {
     offer(registrant, {
       id,
       label,
-      displayLabel,
+      status,
       icon,
       order,
       disabled,
       run: () => runRef.current?.(),
     });
     return () => withdraw(registrant, id);
-  }, [registrant, id, label, displayLabel, icon, order, disabled]);
+  }, [registrant, id, label, status, icon, order, disabled]);
 }
 
 /** Test seam: drop every offer. */

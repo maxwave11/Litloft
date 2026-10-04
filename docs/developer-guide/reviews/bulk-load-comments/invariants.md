@@ -11,3 +11,9 @@ Invariants:
 - With no addon offering an action, the selection bar's actions, their order and the narrow-screen overflow are exactly as before.
 - An addon action never stays on the bar on a narrow screen, is never drawn as danger, and is never shown in the trash view.
 - Core code names no addon and no action.
+
+Revision after round 1, 2026-10-04, on the user's decision after seeing the bar in the app. F1 (width) proposed the first; the second follows from putting the result in a status line.
+Invariants added:
+- Every action on the bar is fully visible at every viewport width from 640px up: the row never scrolls or clips, with or without an addon action, in English and Japanese.
+- A button's name is drawn only where the card is wide enough for all of them; where it is not, each button has the same name as its tooltip.
+- An addon action's label does not change with its result; the result is in the status line above the actions, which is absent while no action sets one.

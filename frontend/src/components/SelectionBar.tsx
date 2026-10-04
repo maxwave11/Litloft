@@ -39,11 +39,6 @@ export interface BulkAction {
   displayLabel?: string;
   onClick: () => void;
   disabled?: boolean;
-  /**
-   * Leave the overflow menu open after the click, for an action whose label
-   * reports its own result: closing the menu would hide it.
-   */
-  keepMenuOpen?: boolean;
   danger?: boolean;
   startsGroup?: boolean;
   /**
@@ -112,6 +107,7 @@ export function SelectionBar({
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLButtonElement>(null);
   const addonActions = useSelectionActions();
+  const statuses = addonActions.flatMap((action) => (action.status ? [action.status] : []));
 
   if (count === 0) return null;
 
@@ -252,10 +248,8 @@ export function SelectionBar({
           id: action.id,
           icon: action.icon,
           label: action.label,
-          displayLabel: action.displayLabel,
           onClick: action.run,
           disabled: action.disabled,
-          keepMenuOpen: true,
           startsGroup: index === 0,
         })),
         {
@@ -323,7 +317,7 @@ export function SelectionBar({
               danger={action.danger}
               disabled={action.disabled}
               onClick={() => {
-                if (!action.keepMenuOpen) closeMore();
+                closeMore();
                 action.onClick();
               }}
             />
@@ -341,9 +335,9 @@ export function SelectionBar({
         {/* `relative` here, one level *outside* the card. The card is
             `overflow-hidden` for its rounded corners, and an `absolute` box
             does not escape an ancestor's clip the way a `fixed` one does. */}
-        <div className="relative mx-auto max-w-3xl px-3 pb-3 sm:pb-4">
+        <div className="relative mx-auto max-w-wide px-3 pb-3 sm:pb-4">
           {overflowMenu}
-          <div className="overflow-hidden rounded-2xl bg-bg-card shadow-lg ring-1 ring-bg-border">
+          <div className="@container overflow-hidden rounded-2xl bg-bg-card shadow-lg ring-1 ring-bg-border">
             <div className="flex items-center gap-3 border-b border-bg-border px-4 py-2.5">
               <div className="flex items-center gap-2">
                 <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-accent/15 px-2 text-xs font-semibold tabular-nums text-accent">
@@ -372,6 +366,15 @@ export function SelectionBar({
                 <X size={16} />
               </button>
             </div>
+
+            {statuses.length > 0 && (
+              <p
+                role="status"
+                className="border-b border-bg-border px-4 py-1.5 text-xs text-text-muted"
+              >
+                {statuses.join(" · ")}
+              </p>
+            )}
 
             <div className="flex items-center gap-1 px-2 py-2">
               {actions.map((action, index) => {
@@ -497,6 +500,14 @@ export function SelectionBar({
   );
 }
 
+/**
+ * The names are drawn on a phone, where only two actions are on the bar, and
+ * wherever the card is wide enough for all of them; in between the buttons
+ * are icons and the name is the tooltip. Written as one literal because
+ * Tailwind reads classes from source text.
+ */
+const LABEL_VISIBILITY = "hidden max-sm:inline @min-[990px]:inline";
+
 function visibility(action: BulkAction) {
   return action.keepOnBar
     ? { className: "", "data-bar": "always" as const }
@@ -529,9 +540,10 @@ function ActionButton({
         // shoulder, and adjacent pseudo-elements overlap, the later one winning.
         className={`flex shrink-0 items-center gap-1.5 rounded-2xl px-3 py-2 text-sm transition-colors pointer-coarse:min-h-11 disabled:opacity-50 disabled:hover:bg-transparent ${colorClass} ${className}`}
         aria-label={action.label}
+        title={action.label}
       >
         <Icon size={15} />
-        <span>{action.displayLabel ?? action.label}</span>
+        <span className={LABEL_VISIBILITY}>{action.displayLabel ?? action.label}</span>
       </button>
     </>
   );

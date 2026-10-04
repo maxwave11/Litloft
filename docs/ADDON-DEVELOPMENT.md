@@ -1008,7 +1008,8 @@ import { useOfferSelectionAction } from "@/lib/selectionActions";
 export default function YourSelectionAction({ drive, files }) {
   useOfferSelectionAction({
     id: "your_addon.action",  // unique across addons; prefix it with your addon
-    label: t("label"),       // already translated
+    label: t("label"),       // already translated, and stable
+    status: resultText,      // optional line shown above the actions
     icon: SomeLucideIcon,
     order: 20,               // ascending; ties by id
     disabled: busy,
@@ -1018,9 +1019,9 @@ export default function YourSelectionAction({ drive, files }) {
 }
 ```
 
-- The action is drawn between **Export** and **Copy**. A `label` is the button's name and the row's text in the `…` menu; give `displayLabel` for a shorter text on the bar.
-- On a narrow screen the action is only in the `…` menu, and it is never drawn as a destructive action. The menu stays open after `run`, so a `label` that reports the result stays in view.
-- After `run` the host does nothing: it keeps the selection and shows no toast. Report the result in `label`, which may change, or in your own component.
+- The action is drawn between **Export** and **Copy**. The `label` is the button's name, its tooltip and the row's text in the `…` menu. The bar draws names only while the card is wide enough for all of them, so a button is an icon with a tooltip on a middling screen. Keep the `label` the same whatever happens, or the bar's width changes under the pointer.
+- On a narrow screen the action is only in the `…` menu, and it is never drawn as a destructive action.
+- After `run` the host does nothing: it keeps the selection and shows no toast. Report the result in `status`, which the bar shows in a line above the actions while it is set, or in your own component.
 - Pass `null` to withdraw the offer. The slot is not mounted in the trash.
 - Do not ask the server about every selection change to decide whether to offer: the bar is redrawn on every click.
 
