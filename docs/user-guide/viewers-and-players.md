@@ -49,7 +49,7 @@ The button appears only when the file has chapters or a transcript. On a phone b
 
 Whichever you choose, a video or audio file also ends with a row of tabs:
 
-- **Transcript by chapter**, on a transcribed file: the whole transcript as plain text with no timestamps, under a heading for each chapter (one block, when the file has no chapters). **Copy** puts it on the clipboard as Markdown, with the file's title at the top, ready to paste into an AI assistant for a summary.
+- **Transcript by chapter**, on a transcribed file: the whole transcript as plain text with no timestamps, under a heading for each chapter (one block, when the file has no chapters). **Copy** puts it on the clipboard as Markdown, with the file's title at the top, ready to paste into an AI assistant for a summary. **Copy for AI**, beside it, copies more: an instruction asking the assistant for a short digest followed by the detail, then the video's title, the transcript by chapter and, for a YouTube video whose comments are loaded, its comments, the most liked first. Without loaded comments you get the transcript alone, and a message says so. The instruction is set by an administrator.
 - One tab for each summary you added, named by its title (for example a short one and a detailed one). **Edit** opens its title and a Markdown text box; **Save** (or Ctrl+Enter) shows it formatted. Saving an empty box removes the summary.
 - **Add summary**: a title and a Markdown box for another summary.
 
