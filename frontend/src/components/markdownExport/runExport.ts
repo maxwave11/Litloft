@@ -42,7 +42,7 @@ async function runProvider(
   }
 }
 
-async function exportFile(
+export async function exportFile(
   file: FileItem,
   drive: string,
   providers: readonly ExportSectionProvider[],

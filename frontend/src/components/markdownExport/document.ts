@@ -1,6 +1,6 @@
 import { formatDuration } from "@/lib/format";
 
-import type { ExportedFile, ExportResult, ProviderOutcome } from "./types";
+import type { ExportedFile, ExportResult, ProviderInfo, ProviderOutcome } from "./types";
 
 export type Gap =
   | { kind: "missing"; providerId: string; label: string; titles: string[]; of: number }
@@ -102,7 +102,7 @@ function addedDay(createdAt: string): string | null {
   return createdAt.match(/^\d{4}-\d{2}-\d{2}/)?.[0] ?? null;
 }
 
-function metadataLine(entry: ExportedFile, labels: ExportLabels): string | null {
+function metadataLine(entry: ExportedFile, labels: Pick<ExportLabels, "added">): string | null {
   const { file } = entry;
   const parts: string[] = [];
   if (file.duration !== null && file.duration !== undefined) {
@@ -124,15 +124,49 @@ export interface ExportDocument {
   videos: { heading: string; markdown: string }[];
 }
 
+function preamblesFor(providers: readonly ProviderInfo[], files: readonly ExportedFile[]): string[] {
+  return providers
+    .filter((p) => p.preamble && files.some((f) => outcomeOf(f, p.id).kind === "section"))
+    .map((p) => p.preamble as string);
+}
+
+function videoBlock(
+  entry: ExportedFile,
+  providers: readonly ProviderInfo[],
+  heading: string,
+  labels: Pick<ExportLabels, "added">,
+  preambles: readonly string[] = [],
+): string {
+  const blocks: string[] = [`## ${heading}`];
+  const meta = metadataLine(entry, labels);
+  if (meta) blocks.push(meta);
+  blocks.push(...preambles);
+  for (const provider of providers) {
+    const outcome = outcomeOf(entry, provider.id);
+    if (outcome.kind !== "section") continue;
+    blocks.push(`### ${oneLine(provider.label)}`, outcome.markdown.trim());
+  }
+  return blocks.join("\n\n");
+}
+
+/**
+ * One video as a document of its own: its block and the keys to its sections,
+ * with no title, contents list or number. `null` when no provider gave it a
+ * section.
+ */
+export function assembleVideoMarkdown(
+  entry: ExportedFile,
+  providers: readonly ProviderInfo[],
+  labels: Pick<ExportLabels, "added">,
+): string | null {
+  if (!hasSection(entry, providers.map((p) => p.id))) return null;
+  return videoBlock(entry, providers, oneLine(entry.file.title), labels, preamblesFor(providers, [entry]));
+}
+
 export function buildExportDocument(result: ExportResult, labels: ExportLabels): ExportDocument {
   const ids = result.providers.map((p) => p.id);
   const included = result.files.filter((f) => hasSection(f, ids));
-
-  const preambles = result.providers
-    .filter(
-      (p) => p.preamble && included.some((f) => outcomeOf(f, p.id).kind === "section"),
-    )
-    .map((p) => p.preamble as string);
+  const preambles = preamblesFor(result.providers, included);
 
   const entries = included.map((file, i) => {
     const text = oneLine(file.file.title);
@@ -147,17 +181,10 @@ export function buildExportDocument(result: ExportResult, labels: ExportLabels):
     );
   }
 
-  const videos = entries.map(({ file: entry, heading }) => {
-    const blocks: string[] = [`## ${heading}`];
-    const meta = metadataLine(entry, labels);
-    if (meta) blocks.push(meta);
-    for (const provider of result.providers) {
-      const outcome = outcomeOf(entry, provider.id);
-      if (outcome.kind !== "section") continue;
-      blocks.push(`### ${oneLine(provider.label)}`, outcome.markdown.trim());
-    }
-    return { heading, markdown: blocks.join("\n\n") };
-  });
+  const videos = entries.map(({ file: entry, heading }) => ({
+    heading,
+    markdown: videoBlock(entry, result.providers, heading, labels),
+  }));
 
   return { head: head.join("\n\n"), videos };
 }

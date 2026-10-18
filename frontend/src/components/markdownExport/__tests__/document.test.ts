@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import type { FileItem } from "@/types";
 
-import { assembleExportMarkdown, exportGaps, type ExportLabels } from "../document";
+import {
+  assembleExportMarkdown,
+  assembleVideoMarkdown,
+  exportGaps,
+  type ExportLabels,
+} from "../document";
 import type { ExportedFile, ExportResult, ProviderOutcome } from "../types";
 
 const labels: ExportLabels = {
@@ -290,5 +295,108 @@ describe("assembleExportMarkdown", () => {
     expect(
       assembleExportMarkdown(result(files, { notMedia: 4, overCap: 9, unregistered: ["x"] }), labels),
     ).toBe(assembleExportMarkdown(result(files), labels));
+  });
+});
+
+describe("assembleVideoMarkdown", () => {
+  const providers = [TRANSCRIPT, COMMENTS];
+
+  it("writes one video's block with its metadata, the legend and each section", () => {
+    const video = entry(
+      "Video",
+      { transcript: section("#### Intro\n\nHello."), "youtube-comments": section("- [VIEWER] x") },
+      { duration: 754, created_at: "2026-05-01T10:00:00Z", tags: ["math", "long form"] },
+      "https://youtu.be/abc",
+    );
+
+    expect(assembleVideoMarkdown(video, providers, labels)).toBe(
+      [
+        "## Video",
+        "_12:34 · added 2026-05-01 · #math #long-form · https://youtu.be/abc_",
+        "[AUTHOR] = the channel. [VIEWER] = anyone else.",
+        "### Transcript",
+        "#### Intro\n\nHello.",
+        "### YouTube comments",
+        "- [VIEWER] x",
+      ].join("\n\n"),
+    );
+  });
+
+  it("has no title, number or contents list of its own", () => {
+    const out = assembleVideoMarkdown(
+      entry("Video", { transcript: section("t"), "youtube-comments": empty }),
+      providers,
+      labels,
+    )!;
+
+    expect(out).not.toContain("Export:");
+    expect(out).not.toContain("---");
+    expect(out).not.toMatch(/^1\. /m);
+  });
+
+  it("gives a video that lacks one section no heading and no note for it", () => {
+    const out = assembleVideoMarkdown(
+      entry("A", { transcript: section("t"), "youtube-comments": failed }),
+      providers,
+      labels,
+    )!;
+
+    expect(out).toContain("### Transcript");
+    expect(out).not.toContain("### YouTube comments");
+  });
+
+  it("writes a provider's preamble only when it produced a section", () => {
+    const without = assembleVideoMarkdown(
+      entry("A", { transcript: section("t"), "youtube-comments": empty }),
+      providers,
+      labels,
+    )!;
+    const withIt = assembleVideoMarkdown(
+      entry("A", { transcript: section("t"), "youtube-comments": section("- c") }),
+      providers,
+      labels,
+    )!;
+
+    expect(without).not.toContain("[AUTHOR]");
+    expect(withIt).toContain("[AUTHOR]");
+  });
+
+  it("omits the metadata parts that are absent, and the line when all are", () => {
+    const bare = assembleVideoMarkdown(
+      entry("Bare", { transcript: section("t"), "youtube-comments": notApplicable }),
+      providers,
+      labels,
+    )!;
+    const dated = assembleVideoMarkdown(
+      entry(
+        "Dated",
+        { transcript: section("t"), "youtube-comments": notApplicable },
+        { created_at: "2026-05-01T10:00:00Z" },
+      ),
+      providers,
+      labels,
+    )!;
+
+    expect(bare).toBe("## Bare\n\n### Transcript\n\nt");
+    expect(dated).toBe("## Dated\n\n_added 2026-05-01_\n\n### Transcript\n\nt");
+  });
+
+  it("puts a title on one line and escapes its brackets", () => {
+    const out = assembleVideoMarkdown(
+      entry("Part [1]\nof two", { transcript: section("t"), "youtube-comments": notApplicable }),
+      providers,
+      labels,
+    )!;
+
+    expect(out.split("\n")[0]).toBe("## Part \\[1\\] of two");
+  });
+
+  it.each<[string, Record<string, ProviderOutcome>]>([
+    ["every provider is empty", { transcript: empty, "youtube-comments": empty }],
+    ["a section has nothing in it", { transcript: section("  \n"), "youtube-comments": notApplicable }],
+    ["every provider failed", { transcript: failed, "youtube-comments": failed }],
+    ["a provider never answered", {}],
+  ])("has nothing to write when %s", (_name, outcomes) => {
+    expect(assembleVideoMarkdown(entry("A", outcomes), providers, labels)).toBeNull();
   });
 });

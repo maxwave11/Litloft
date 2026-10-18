@@ -5,12 +5,11 @@ import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
 
 import { AddonSlot } from "@/components/AddonSlot";
-import { useAddonSlots } from "@/components/AddonSlotsProvider";
 import { useDialogPortalTarget } from "@/components/DialogPortal";
 import { useToast } from "@/components/ToastProvider";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { copyText } from "@/lib/copyText";
-import { useExportSections, type ExportSectionProvider } from "@/lib/exportSections";
+import type { ExportSectionProvider } from "@/lib/exportSections";
 import { OVERLAY_PRIORITY } from "@/lib/shortcuts";
 import type { FileItem } from "@/types";
 
@@ -23,9 +22,7 @@ import {
 } from "./MarkdownExportPresenter";
 import { runExport } from "./runExport";
 import type { ExportResult } from "./types";
-
-export const EXPORT_SECTIONS_SLOT = "markdown-export-sections";
-const WAIT_FOR_PROVIDERS_MS = 5000;
+import { EXPORT_SECTIONS_SLOT, useExportProviders } from "./useExportProviders";
 
 interface MarkdownExportContainerProps {
   files: readonly FileItem[];
@@ -47,14 +44,12 @@ export function MarkdownExportContainer({
   const tc = useTranslations("common");
   const toast = useToast();
   const target = useDialogPortalTarget();
-  const { getSlotEntries, loading: slotsLoading } = useAddonSlots();
-  const offered = useExportSections();
+  const { ready, providers, unavailable } = useExportProviders();
 
   // The selection may change under an open dialog; the document is of what was
   // selected when it opened.
   const [selected] = useState(files);
 
-  const [timedOut, setTimedOut] = useState(false);
   const [plan, setPlan] = useState<Plan | null>(null);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [result, setResult] = useState<ExportResult | null>(null);
@@ -71,21 +66,9 @@ export function MarkdownExportContainer({
   );
 
   useEffect(() => {
-    const timer = setTimeout(() => setTimedOut(true), WAIT_FOR_PROVIDERS_MS);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Providers are offered by slot entries that load lazily, so the set is
-  // taken once every entry the slot lists has offered one, or when waiting
-  // any longer would leave the viewer looking at a spinner.
-  const offeredIds = new Set(offered.map((p) => p.id));
-  const notOffered = getSlotEntries(EXPORT_SECTIONS_SLOT).filter((e) => !offeredIds.has(e.id));
-  const ready = timedOut || (!slotsLoading && notOffered.length === 0);
-
-  useEffect(() => {
     if (!ready || plan) return;
-    setPlan({ providers: offered, unavailable: notOffered.map((e) => e.label) });
-  }, [ready, plan, offered, notOffered]);
+    setPlan({ providers, unavailable });
+  }, [ready, plan, providers, unavailable]);
 
   useEffect(() => {
     if (!plan) return;
