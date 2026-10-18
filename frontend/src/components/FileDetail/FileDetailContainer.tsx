@@ -195,6 +195,7 @@ export function FileDetailContainer({
   const addonSlotProps = {
     fileId,
     drive,
+    file,
     filename: file.filename,
     title: file.title || file.filename,
     videoRef,
