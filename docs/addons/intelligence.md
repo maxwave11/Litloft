@@ -162,6 +162,8 @@ Meaning-based results are mixed into the ordinary search results. What a viewer 
 
 The query is embedded with `models.text_embedding`, matched against the vectors and against keyword indexes, and the two are blended with `search.alpha` (0 = keywords only, 1 = vectors only). Results are capped by `search.default_limit` and `search.max_limit`.
 
+A search can be limited to one YouTube channel: `GET /api/addons/intelligence/search?q=...&channel=<name>`. The name is the one core stores for the file's video, so it is the channel name shown for the video and returned by the MCP `list_channels` tool. The limit is applied before ranking, which is why a channel with a few dozen videos is not crowded out by a channel with hundreds; narrowing the results afterwards would return almost nothing. Files that are not imported links have no channel and are outside every channel-scoped search. Omitting `channel` searches the whole drive.
+
 ### Scene search
 
 **Scene search** above the search results matches your words against the stored video frames. `search.min_score_clip` and `search.min_score_clip_thumbnail` are the score floors. Both default to 0.05, which suits the default SigLIP2 model; use 0.20 with CLIP-family models.
@@ -651,6 +653,8 @@ There is no "reindex everything" button. Instead:
 - For failed jobs, on the admin dashboard press **View** on the **N failed jobs** band and **Retry** a row. Files skipped because their type is not supported are not listed.
 
 Changing the text embedding model in the browser (or `models.text_embedding` in the file) rebuilds the whole text index at the next restart. Ask and text search are unavailable until it finishes. Detailed-summary citations are not rebuilt; run `backfill_detailed_citations --force` for that.
+
+The first start after upgrading to a version that knows about channels also rebuilds `vec_text` and `vec_clip` once, to record each vector's channel. It copies the existing vectors instead of recomputing them — about a minute for a 130-thousand-chunk index — and search is unavailable while it runs. The log shows `Rebuilding vec_text with a channel partition key` when this happens; it does not repeat on later starts.
 
 Changing `models.clip` rebuilds CLIP embeddings at restart only if the new model's vector size differs. Changing the Whisper model does not re-transcribe anything; use **Regenerate** on the `whisper` task.
 

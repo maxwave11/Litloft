@@ -44,7 +44,7 @@ const driveHeader = (drive: string) => ({ "X-Lit-Drive": encodeURIComponent(driv
 const listChannels: LitloftTool = {
   name: "list_channels",
   description:
-    "List the channels a drive follows (media_import subscriptions). Each entry's `id` is what list_channel_videos takes as `channel_id`. Only subscribed channels are listed, so a channel whose videos were imported one by one has no entry here; its name still shows in each video's metadata.",
+    "List the channels a drive follows (media_import subscriptions). Each entry's `id` is what list_channel_videos takes as `channel_id`, and its `name` is what semantic_search takes as `channel` to search inside that channel. Only subscribed channels are listed, so a channel whose videos were imported one by one has no entry here; its name still shows in each video's metadata.",
   inputSchema: { drive: z.string().describe("Drive name") },
   annotations: readOnlyAnnotations,
   handler: (args, client) =>
