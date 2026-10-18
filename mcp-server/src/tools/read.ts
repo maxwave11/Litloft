@@ -230,6 +230,16 @@ const semanticSearch: LitloftTool = {
   inputSchema: {
     drive: z.string().describe("Drive name"),
     q: z.string().min(1).describe("Natural-language search query"),
+    channel: z
+      .string()
+      .optional()
+      .describe(
+        "Search only inside one channel. Pass the channel name exactly as "
+        + "get_video_metadata reports it for that channel's videos (list_channels' "
+        + "`name` is normally the same string). The scope is applied inside the "
+        + "index before ranking, so nothing from other channels reaches the "
+        + "results — filtering results afterwards would drop most of them.",
+      ),
     limit: z.number().int().min(1).max(100).optional(),
     type: z
       .enum(["video", "image", "audio", "document", "archive", "other"])

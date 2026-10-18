@@ -261,6 +261,18 @@ describe("semantic_search", () => {
       headers: { "X-Lit-Drive": encodeURIComponent("動画") },
     });
   });
+
+  it("passes channel as a query parameter so the scope is applied inside the index", async () => {
+    const client = fakeClient(async () => ({ results: [], total: 0 }));
+    await findTool("semantic_search").handler(
+      { drive: "media", q: "банковская гарантия", channel: "Туран Тендер" },
+      client
+    );
+    expect(client.calls[0].options).toEqual({
+      query: { q: "банковская гарантия", channel: "Туран Тендер" },
+      headers: { "X-Lit-Drive": "media" },
+    });
+  });
 });
 
 describe("get_transcript", () => {

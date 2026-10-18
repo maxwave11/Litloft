@@ -187,7 +187,7 @@ When adding a new tool, put agent-facing behavior notes in its
 | `search_files` | Search/list files within a single drive (set `path` with no `search` to list a folder's files) |
 | `get_file` | Get metadata for a single file |
 | `get_file_content` | Read the text content of a small `text/markdown`/`text/plain` file (≤1MB), plus its ETag |
-| `semantic_search` | Rank files in a drive by relevance to a natural-language query; a hybrid search combining transcript/caption/embedding relevance with filename/title/path/tag matching — returns matching excerpts |
+| `semantic_search` | Rank files in a drive by relevance to a natural-language query; a hybrid search combining transcript/caption/embedding relevance with filename/title/path/tag matching — returns matching excerpts. Pass `channel` to search one channel only |
 | `get_transcript` | Get a video/audio file's Whisper transcript as time-stamped chunks, optionally narrowed to a time range |
 | `get_watch_history` | Continue-watching / watch history for a drive |
 | `list_comments` | List comments on a file |
