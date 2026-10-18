@@ -191,6 +191,10 @@ When adding a new tool, put agent-facing behavior notes in its
 | `get_transcript` | Get a video/audio file's Whisper transcript as time-stamped chunks, optionally narrowed to a time range |
 | `get_watch_history` | Continue-watching / watch history for a drive |
 | `list_comments` | List comments on a file |
+| `list_channels` | List the channels a drive follows (Media Import subscriptions) |
+| `list_channel_videos` | List one channel's imported videos, newest published first, with the `file_id` the other tools take; pageable with `limit`/`offset` |
+| `get_video_metadata` | Source metadata of an imported video: original URL, channel name, publish date, language, caption availability |
+| `get_video_comments` | The YouTube comments saved for an imported video, replies nested; distinct from `list_comments`, which returns comments written in Litloft |
 | `ask` | Ask Litloft Intelligence a question within one drive |
 
 ### Write
