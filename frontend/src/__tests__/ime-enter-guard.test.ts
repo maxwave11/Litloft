@@ -59,10 +59,12 @@ const ADDON_TEXT_FIELD_ENTER = [
 /**
  * DetailedSummarySection moves between headings, not in a text field.
  * WikiLinkAutocomplete answers keys the Markdown editor forwards to it, not a
- * field of its own.
+ * field of its own. UserSummaryPanel saves on Cmd/Ctrl+Enter, which an IME
+ * never sends to confirm.
  */
 const ADDON_NOT_A_GUARDED_ENTER = [
   "intelligence/frontend/DetailedSummarySection.tsx",
+  "intelligence/frontend/UserSummaryPanel.tsx",
   "knowledge/frontend/WikiLinkAutocomplete.tsx",
 ];
 
@@ -102,7 +104,7 @@ describe("core files handling Enter", () => {
 
   it("are all declared in the addons as well", () => {
     const declared = [...ADDON_TEXT_FIELD_ENTER, ...ADDON_NOT_A_GUARDED_ENTER].sort();
-    expect(declared).toHaveLength(6);
+    expect(declared).toHaveLength(7);
     const found = readdirSync(ADDONS_DIR, { withFileTypes: true })
       .filter((e) => e.isDirectory())
       .map((e) => resolve(ADDONS_DIR, e.name, "frontend"))

@@ -12,7 +12,7 @@ import { FileTypeIcon } from "./FileTypeIcon";
 import { VideoPreview } from "./VideoPreview";
 import { TextThumbnail } from "./TextThumbnail";
 import { hasKnownLength, primaryMetaText } from "@/lib/primaryMeta";
-import { FileMetadataSlots } from "./FileMetadataSlots";
+import { FileMetaLine } from "./FileMetadataSlots";
 
 function FileCardImpl({
   file,
@@ -171,25 +171,25 @@ function FileCardImpl({
           <span className="line-clamp-2 text-sm font-semibold text-text-primary">
             {file.title}
           </span>
-          <div data-file-meta className="mt-0.5 flex items-center gap-1.5 text-xs text-text-muted">
-            <div className={`flex min-w-0 flex-1 items-center gap-x-1.5 gap-y-0.5 ${file.file_type === "video" || file.filename.toLowerCase().endsWith(".loft") ? "overflow-hidden whitespace-nowrap" : "flex-wrap"}`}>
-              <FileMetadataSlots fileId={file.id} drive={file.drive} filename={file.filename} fileType={file.file_type} part="metadata" />
-              {primaryText !== null && (
-                <>
-                  <span className="shrink-0 tabular-nums">{primaryText}</span>
-                  <span className="opacity-40">·</span>
-                </>
-              )}
-              <span className="shrink-0 tabular-nums">{formatRelativeDate(file.created_at)}</span>
-              {file.tags.length > 0 && (
-                <>
-                  <span className="opacity-40">·</span>
-                  <TagList tags={file.tags} maxVisible={2} />
-                </>
-              )}
-            </div>
-            <FileMetadataSlots fileId={file.id} drive={file.drive} filename={file.filename} fileType={file.file_type} part="indicators" />
-          </div>
+          <FileMetaLine
+            marked
+            target={{ fileId: file.id, drive: file.drive, filename: file.filename, fileType: file.file_type }}
+            className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-text-muted"
+          >
+            {primaryText !== null && (
+              <>
+                <span className="shrink-0 tabular-nums">{primaryText}</span>
+                <span className="opacity-40">·</span>
+              </>
+            )}
+            <span className="shrink-0 tabular-nums">{formatRelativeDate(file.created_at)}</span>
+            {file.tags.length > 0 && (
+              <>
+                <span className="opacity-40">·</span>
+                <TagList tags={file.tags} maxVisible={2} />
+              </>
+            )}
+          </FileMetaLine>
           {matchOverlay && (
             <div
               className="mt-2 border-t border-bg-border pt-2"

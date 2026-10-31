@@ -24,7 +24,7 @@ import {
   ROW_OVERFLOW_BUTTON,
 } from "./rowFurniture";
 import { TagList } from "./TagList";
-import { FileMetadataSlots } from "./FileMetadataSlots";
+import { FileMetaLine } from "./FileMetadataSlots";
 import { TextThumbnail } from "./TextThumbnail";
 
 interface FileListRowProps {
@@ -164,33 +164,32 @@ function FileListRowImpl({
             {formatRelativeDate(file.updated_at)}
           </span>
         </div>
-        <div className="mt-0.5 flex items-center gap-1.5 text-xs text-text-muted">
-          <div className={`flex min-w-0 flex-1 items-center gap-x-1.5 gap-y-0.5 ${file.file_type === "video" || file.filename.toLowerCase().endsWith(".loft") ? "overflow-hidden whitespace-nowrap" : "flex-wrap"}`}>
-            <FileMetadataSlots fileId={file.id} drive={file.drive} filename={file.filename} fileType={file.file_type} part="metadata" />
-            {showTypeLabel && (
-              <span className="flex-shrink-0">{fileTypeLabel[file.file_type] ?? file.file_type}</span>
-            )}
-            {showExtensionBadge && file.file_type !== "video" && file.file_type !== "audio" && file.filename.includes(".") && (
-              <span className="flex-shrink-0 rounded-lg bg-bg-elevated px-1.5 py-0.5 text-[10px] font-medium uppercase text-text-muted">
-                {file.filename.split(".").pop()}
-              </span>
-            )}
-            {primaryText !== null && (
-              <>
-                <span className="flex-shrink-0 sm:hidden">{primaryText}</span>
-                <span className="flex-shrink-0 opacity-40 sm:hidden">·</span>
-              </>
-            )}
-            <span className="flex-shrink-0 sm:hidden">{formatRelativeDate(file.updated_at)}</span>
-            {file.tags.length > 0 && (
-              <>
-                <span className="hidden flex-shrink-0 opacity-40 sm:inline">·</span>
-                <TagList tags={file.tags} maxVisible={3} />
-              </>
-            )}
-          </div>
-          <FileMetadataSlots fileId={file.id} drive={file.drive} filename={file.filename} fileType={file.file_type} part="indicators" />
-        </div>
+        <FileMetaLine
+          target={{ fileId: file.id, drive: file.drive, filename: file.filename, fileType: file.file_type }}
+          className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-text-muted"
+        >
+          {showTypeLabel && (
+            <span className="flex-shrink-0">{fileTypeLabel[file.file_type] ?? file.file_type}</span>
+          )}
+          {showExtensionBadge && file.file_type !== "video" && file.file_type !== "audio" && file.filename.includes(".") && (
+            <span className="flex-shrink-0 rounded-lg bg-bg-elevated px-1.5 py-0.5 text-[10px] font-medium uppercase text-text-muted">
+              {file.filename.split(".").pop()}
+            </span>
+          )}
+          {primaryText !== null && (
+            <>
+              <span className="flex-shrink-0 sm:hidden">{primaryText}</span>
+              <span className="flex-shrink-0 opacity-40 sm:hidden">·</span>
+            </>
+          )}
+          <span className="flex-shrink-0 sm:hidden">{formatRelativeDate(file.updated_at)}</span>
+          {file.tags.length > 0 && (
+            <>
+              <span className="hidden flex-shrink-0 opacity-40 sm:inline">·</span>
+              <TagList tags={file.tags} maxVisible={3} />
+            </>
+          )}
+        </FileMetaLine>
         {file.match_meta && (
           <div
             className="mt-1.5"
