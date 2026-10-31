@@ -17,7 +17,12 @@ from app.nanoid import generate_nanoid
 from app.services.atomic_write import generating_file
 from app.services.heic import cleanup_heic_cache
 from app.services.markdown_images import project_markdown_thumbnail
-from app.services.tagops import cleanup_orphan_tags
+from app.services.subtitle import move_sidecar_subtitles
+from app.services.tagops import (
+    cleanup_orphan_tags,
+    project_frontmatter_tags,
+    retarget_file_tags,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -329,6 +334,7 @@ def copy_file(db: Session, file_id: str, target_drive: str | None, target_folder
             if _is_markdown_file(new_file):
                 content = _read_markdown_for_projection(new_full)
                 if content is not None:
+                    project_frontmatter_tags(db, new_file, content)
                     project_markdown_thumbnail(db, new_file, content)
                     if new_file.thumbnail_path:
                         projected_thumb = (
@@ -373,6 +379,20 @@ def copy_file(db: Session, file_id: str, target_drive: str | None, target_folder
 
     db.refresh(new_file)
     return new_file
+
+
+def _serves_subtitles(file: File) -> bool:
+    return file.file_type == "video" or file.mime_type == "application/vnd.litloft.loft+json"
+
+
+def _carry_sidecars(file: File, old_full: Path, new_full: Path) -> None:
+    """Best effort: a failure here never undoes the video's own change."""
+    if not _serves_subtitles(file):
+        return
+    try:
+        move_sidecar_subtitles(old_full, new_full)
+    except Exception:
+        logger.exception("sidecar subtitles: could not carry %s to %s", old_full, new_full)
 
 
 def rename_file(db: Session, file_id: str, new_filename: str) -> File:
@@ -427,6 +447,8 @@ def rename_file(db: Session, file_id: str, new_filename: str) -> File:
             status_code=500,
             detail=f"Rename failed (DB error, filesystem reversed): {exc}",
         ) from exc
+
+    _carry_sidecars(file, old_full, new_full)
 
     # Best-effort: a rewrite failure must NOT roll back the user-visible rename
     # (FS + DB row are already durable).
@@ -493,6 +515,7 @@ def move_file(db: Session, file_id: str, target_drive: str | None, target_folder
 
         old_drive = file.drive
         old_folder = file.folder_path
+        retarget_file_tags(db, file, old_drive, dst_drive)
         file.drive = dst_drive
         file.folder_path = target_folder
         file.file_path = new_rel
@@ -514,6 +537,8 @@ def move_file(db: Session, file_id: str, target_drive: str | None, target_folder
             status_code=500,
             detail=f"Move failed (DB error, filesystem reversed): {exc}",
         ) from exc
+
+    _carry_sidecars(file, old_full, new_full)
 
     db.refresh(file)
     return file
@@ -979,6 +1004,10 @@ def _compute_new_filename(file: File, mode: str, index: int, **kwargs) -> str:
     return new_stem + ext
 
 
+def _fold_name(name: str) -> str:
+    return unicodedata.normalize("NFC", name).lower()
+
+
 def _validate_no_duplicates(rename_plan: list[tuple[File, str]], drive_path: Path) -> None:
     new_names = [name for _, name in rename_plan]
     seen: set[str] = set()
@@ -990,28 +1019,30 @@ def _validate_no_duplicates(rename_plan: list[tuple[File, str]], drive_path: Pat
             )
         seen.add(lower)
 
-    ids_in_batch = {f.id for f, _ in rename_plan}
+    # Replays the renames in the order batch_rename runs them, so a name freed
+    # by an earlier rename may be taken by a later one, and nothing is ever
+    # renamed onto a file that is still there.
+    held_by_folder: dict[str, set[str]] = {}
     for file, new_name in rename_plan:
-        if new_name == file.filename:
+        folder_key = unicodedata.normalize("NFC", file.folder_path or "")
+        if folder_key not in held_by_folder:
+            folder_dir = drive_path / file.folder_path if file.folder_path else drive_path
+            held_by_folder[folder_key] = (
+                {_fold_name(p.name) for p in folder_dir.iterdir() if p.is_file()}
+                if folder_dir.exists()
+                else set()
+            )
+        held = held_by_folder[folder_key]
+        old, new = _fold_name(file.filename), _fold_name(new_name)
+        if new == old:
             continue
-        folder_dir = drive_path / file.folder_path if file.folder_path else drive_path
-        siblings = (
-            (folder_dir / p.name)
-            for p in folder_dir.iterdir()
-            if p.is_file()
-        ) if folder_dir.exists() else iter([])
-        for sibling_path in siblings:
-            sibling_name = sibling_path.name
-            if sibling_name.lower() == new_name.lower():
-                is_self = any(
-                    f.filename == sibling_name and f.id in ids_in_batch
-                    for f, _ in rename_plan
-                )
-                if not is_self:
-                    raise HTTPException(
-                        status_code=409,
-                        detail=f"File already exists: {new_name}",
-                    )
+        if new in held:
+            raise HTTPException(
+                status_code=409,
+                detail=f"File already exists: {new_name}",
+            )
+        held.discard(old)
+        held.add(new)
 
 
 def _rollback_fs_renames(completed: list[tuple[Path, Path]]) -> None:
@@ -1072,6 +1103,9 @@ def batch_rename(
             completed_fs.append((new_full, old_full))
 
             _update_file_after_rename(file, new_name, new_rel, drive_path)
+            # The (drive, file_path) UNIQUE check has to see the rows change in
+            # the same order the files moved, not in primary-key order.
+            db.flush()
             results.append({"id": file.id, "old_name": old_name, "new_name": new_name})
 
         db.commit()
@@ -1080,7 +1114,27 @@ def batch_rename(
         db.rollback()
         raise
 
+    _carry_batch_sidecars(db, rename_plan, completed_fs)
     return results
+
+
+def _carry_batch_sidecars(
+    db: Session,
+    rename_plan: list[tuple[File, str]],
+    completed_fs: list[tuple[Path, Path]],
+) -> None:
+    """Carry sidecars in rename order, so a name freed by an earlier rename is
+    free again when a later one needs it.
+    """
+    by_new_path = {new: old for new, old in completed_fs}
+    for file, _ in rename_plan:
+        try:
+            new_full = resolve_drive_path(file.drive) / file.file_path
+            old_full = by_new_path.get(new_full)
+            if old_full is not None:
+                _carry_sidecars(file, old_full, new_full)
+        except Exception:
+            logger.exception("batch rename: could not carry sidecar subtitles of %s", file.id)
 
 
 def _update_file_after_rename(

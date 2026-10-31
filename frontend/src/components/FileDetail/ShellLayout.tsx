@@ -45,6 +45,7 @@ export interface ShellLayoutProps {
   isHtmlPreview: boolean;
   hasPlayer: boolean;
   usesCanvasViewer: boolean;
+  plainTextDocument: boolean;
   descriptionInCanvas: boolean;
   companionMountable: boolean;
   companionOccupied: boolean;
@@ -84,6 +85,7 @@ export function ShellLayout({
   isHtmlPreview,
   hasPlayer,
   usesCanvasViewer,
+  plainTextDocument,
   descriptionInCanvas,
   companionMountable,
   companionOccupied,
@@ -421,6 +423,7 @@ export function ShellLayout({
       sheetPeek={sheetPeek}
       resetKey={fileId}
       previewOnly={isHtmlPreview}
+      plainText={plainTextDocument}
     >
       {/* The canvas is at least as tall as the scroll viewport (`flex-1`
           against the layout's scrolling <main>), and the editor region
@@ -436,7 +439,12 @@ export function ShellLayout({
               id="file-detail-sections"
               layout="stack"
               includeIds={["knowledge-edit"]}
-              props={{ ...addonSlotProps, fillHeight: true }}
+              props={{
+                ...addonSlotProps,
+                fillHeight: true,
+                highlight,
+                ...(plainTextDocument ? { plainTextDocument: true } : {}),
+              }}
             />
           )}
         </div>

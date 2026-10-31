@@ -43,7 +43,7 @@ The slug is a path identifier, not the display name. On a fresh install the back
 
 ## Passwords file
 
-`configure.py` always creates `passwords.json` as `[]` and mounts it read-write:
+`configure.py` creates `passwords.json` as `[]` when it does not exist, never overwrites an existing one, and mounts it read-write:
 
 ```yaml
 services:
@@ -177,6 +177,10 @@ services:
           cpus: "4"
           memory: 8g
 ```
+
+## Behind a reverse proxy
+
+Pass the browser's `Host` header through unchanged. The EPUB reader only runs scripts from the `Host` a request arrived with, so behind a proxy that rewrites it, a book stays on *Loading the book...*.
 
 ## Multiple instances
 

@@ -19,7 +19,7 @@ The `intelligence` addon adds meaning-based search, Ask (question answering over
 | **Transcript refine** | Corrects transcripts with an LLM | off | yes |
 | **Vision describe** | Image descriptions | manual | yes, with `llm.vision_model` |
 | **Visual index** | A list of described scenes in a video, each one seekable | off | yes, with `llm.vision_model` |
-| **Transcription** | Local faster-Whisper or a cloud provider | local | no |
+| **Transcription** | Local faster-Whisper, the local Japanese-only Haas engine, or a cloud provider | local | no |
 | **Pickup** | A feed of files you have never opened, ranked by your watch history | always | no |
 
 The LLM itself ships disabled (`llm.provider: "disabled"`), so a new install makes no LLM calls until you configure a provider. Features marked "manual" run only when you press a button.
@@ -31,7 +31,7 @@ The addon can send your file content to outside services. Whether it does depend
 - Which [LLM profile](#llm-profiles-and-routing) a feature uses. A profile on your own machine (ollama, or another model on your network) keeps content at home. A profile marked **External server** sends it to that server, and only on drives that allow it (`llm_cloud` below).
 - **Ask** (`features.rag`) sends transcripts and text of the files it retrieves on every question.
 - Vision describe and the visual index send image bytes (and, for the visual index, nearby transcript text) to the vision model.
-- `transcription.provider`: `"whisper_local"` keeps audio local; every other provider sends audio to the cloud.
+- `transcription.provider`: `"whisper_local"` and `"haas_local"` keep audio local; every other provider sends audio to the cloud.
 
 ### Per-drive policy
 
@@ -60,14 +60,14 @@ Each drive can switch features off in its `addons.intelligence` entry in `drives
 | `retrieval_keywords` | No retrieval keywords |
 | `vision_describe` | No image descriptions; existing ones are deleted at the next addon start |
 | `video_visual_index` | No visual index; existing ones are deleted at the next addon start |
-| `transcription_cloud` | The drive uses `whisper_local` even when a cloud provider is configured |
+| `transcription_cloud` | The drive uses a local engine: the configured provider when it is local, otherwise `whisper_local` |
 | `llm_cloud` | No content from the drive goes to an **External server** profile. A feature routed to one uses the local fallback profile instead, or does not run when there is none |
 
 A missing key means on. The [settings GUI](../admin-guide/settings-gui.md#addon-policy) shows only `transcription_cloud`, `chapter_suggestions` and `llm_cloud`; set the others by editing `drives.json`. A change saved in the GUI reaches this addon within about 30 seconds; a hand edit of `drives.json` needs a backend restart.
 
 ## Installation
 
-The addon is a Git submodule under `addons/intelligence/`. Answer yes when `configure.py` asks to enable it. It writes the service into `docker-compose.override.yml`, mounts your drives read-only, copies `search-config.yml.example` to `search-config.yml`, and generates `SEARCH_WEBHOOK_SECRET` in `.env`. Then:
+The addon is a Git submodule under `addons/intelligence/`. Answer yes when `configure.py` asks to enable it. It writes the service into `docker-compose.override.yml`, mounts your drives read-only, copies `search-config.yml.example` to `search-config.yml` if it does not exist yet, and generates `SEARCH_WEBHOOK_SECRET` in `.env`. Then:
 
 ```bash
 docker compose up -d --build
@@ -127,6 +127,10 @@ Why the data directory is mounted this way: [read-only mounts for addons](../adm
 
 The first start downloads the ML models (Whisper, CLIP, text embeddings, BLIP) into `data/addons/intelligence/models/`. Expect 1 to 3 GB.
 
+The first start after an upgrade that changes how keywords are counted tokenizes every file once in the background, which takes minutes on a large library. Until it finishes, keyword-based tag suggestions are missing or less precise. Pausing the index queue also pauses this work.
+
+The first start after the upgrade that splits the vector tables by embedding type rebuilds both tables before the addon answers. On a large library this takes several minutes. The log shows `vec partition migration: start` when the rebuild begins and `vec partition migration: done` when it ends. `docker compose ps` may show the addon `unhealthy` until then. Do not restart it: a restart throws the rebuild away and starts it over. The rebuild needs free disk of four times the vector data, and the addon refuses to start with `not enough free disk` when less is free. Most of it returns once the rebuild ends. `search.db` stays larger by about the size of the vectors, and later indexing reuses that space.
+
 ## Settings in the browser
 
 An administrator can change most settings at **Settings** → **Intelligence** (`/admin/settings`):
@@ -168,6 +172,12 @@ The query is embedded with `models.text_embedding`, matched against the vectors 
 ### Scene search
 
 **Scene search** above the search results matches your words against the stored video frames. `search.min_score_clip` and `search.min_score_clip_thumbnail` are the score floors. Both default to 0.05, which suits the default SigLIP2 model; use 0.20 with CLIP-family models.
+
+An agent can also list every place a string appears in a drive's document text, transcripts and Visual Index scenes (`search_exact`, a plain substring match rather than a ranking), and rank Visual Index scenes by what they show (`search_video_scenes`); both need the `search` policy, and scenes also need the Visual index enabled for the drive.
+
+An agent can read the text of a PDF, Word, Excel, PowerPoint or EPUB file a page, slide, sheet or EPUB section at a time (`read_document`, backed by `GET /files/{file_id}/document-text`). The text is extracted from the file on each call with the same extractors indexing uses, and nothing is stored. A response stops at `max_chars` and returns a `next` cursor to continue. A PDF read covers at most 10 pages. At most two reads extract at once, and PDF conversions (reads and indexing) run one at a time; a read that cannot start within 10 seconds gets 429. The file must already be indexed by the addon.
+
+An agent connected through the [MCP server](../../mcp-server/README.md) can look at the same frames: `list_video_scenes` returns representative scenes picked from them, with a small frame each, and `get_video_frame` returns a large frame at any time. Neither needs the Visual index or a vision model.
 
 ### Auto-tags
 
@@ -214,7 +224,7 @@ Modes (`features.chapter_suggestions`): `"false"` (default), `"manual"`, `"on_in
 
 How an answer is built (keys under `rag.*`):
 
-1. Shortlist (`rag.hierarchical`): picks up to `coarse_top_k` likely files first. Skipped on drives with fewer than `min_drive_files_for_shortlist` files, or when no file scores above `coarse_score_threshold`.
+1. Shortlist (`rag.hierarchical`): picks up to `coarse_top_k` likely files first, judged by title and summary. Skipped on drives with fewer than `min_drive_files_for_shortlist` files, or when no file scores above `coarse_score_threshold`. A file whose transcript or text contains a word from the question is added as well, when that word appears in at most `exact_match_max_files` files of the drive. This keeps a product mentioned once inside a long round-up video from being lost. `0` turns the addition off.
 2. Retrieval: finds matching passages, searching with up to `clue_count` rewrites of the question.
 3. Viewing history (`rag.personal_history`): questions like *"what I watched last week"* are limited to files the viewer opened, up to `max_lookback_days` back. Needs a [profile](../user-guide/profile-preferences.md).
 4. Category expansion (`rag.category_expansion`, off by default): the LLM turns vague words like *"sci-fi-ish"* into up to `max_terms` search terms.
@@ -254,6 +264,8 @@ Modes (`features.retrieval_keywords`):
 ### Transcript refine
 
 **Clean up with AI** in the transcript asks the LLM to fix punctuation, homophones and names, chunk by chunk. The words are then re-timed against the audio and the embeddings rebuilt. If re-timing fails (audio missing, language not supported, out of memory), the old word timings stay.
+
+Refine writes numbers as digits (`2025年`, `1万5000円`) whichever engine transcribed the file. Keyword search, semantic search, the transcript and subtitles use the refined text. A file refined by an earlier version, before refine updated keyword search, keeps matching its text from before refine in keyword search until it is transcribed again.
 
 Refine replaces the transcript text, and there is no undo. To get the original back, transcribe the file again: **Index details** → **Regenerate** on the `whisper` task.
 
@@ -315,17 +327,30 @@ Modes (`features.video_visual_index`): `"false"` (default), `"manual"`, `"on_ind
 | Provider | API key | Speakers | Word timestamps | Hotwords |
 |---|---|---|---|---|
 | `whisper_local` (default) | — | no | yes | no |
+| `haas_local` (Japanese only) | — | no | yes | no |
 | `openai_compatible` (OpenAI, Groq, Fireworks, self-hosted) | `OPENAI_API_KEY` | no | yes | no |
 | `deepgram` | `DEEPGRAM_API_KEY` | yes | yes | no |
 | `elevenlabs_scribe` | `ELEVENLABS_API_KEY` | yes | yes | yes |
 | `assemblyai` | `ASSEMBLYAI_API_KEY` | yes | yes | yes |
 | `gemini` | `GEMINI_API_KEY` | no | evenly spaced, not measured | yes, through the prompt |
 
-- `whisper_local` runs on your machine. Everything else sends audio to the cloud.
+- `whisper_local` and `haas_local` run on your machine. Everything else sends audio to the cloud.
 - Large files are converted and split at silences before they are sent, so no provider's upload limit applies. The split size is the provider's limit or 64 MB, whichever is smaller. Change the 64 MB with the `TRANSCRIPTION_MAX_INPUT_MEMORY_BYTES` environment variable on the intelligence container.
 - `transcription.hotwords` is a list of names and terms for providers that support it.
-- `transcription.language_hint` is a language code (`"ja"`, `"en"`) passed to cloud providers. Empty means detect. `whisper_local` always detects.
-- A drive with `transcription_cloud: false` uses `whisper_local` whatever the provider.
+- `transcription.language_hint` is a language code (`"ja"`, `"en"`) passed to cloud providers. Empty means detect. `whisper_local` always detects; `haas_local` ignores it.
+- A drive with `transcription_cloud: false` uses `haas_local` when it is the provider, and `whisper_local` when the provider is a cloud one.
+
+#### `haas_local`
+
+An unofficial community ONNX conversion of Haas-ja-v1.0 (`oboroge0/Haas-ja-v1.0-onnx-quantized`, Apache 2.0), run on the CPU through `sherpa-onnx`. It is several times faster than `whisper_local` on Japanese and sends no audio out. Select it in **Admin > Settings** or with `transcription.provider`, restart, and it applies to files transcribed from then on. Nothing is re-transcribed automatically; use **Regenerate** on the `whisper` task for one file.
+
+- **Japanese only.** Audio in another language is not detected and does not fail: it produces meaningless text, which is indexed, embedded and searched like any transcript. The provider applies to every drive.
+- The model (about 460 MB) downloads from Hugging Face the first time a file is transcribed, so that job takes longer and other transcription waits. It then needs no network. The model stays in `data/addons/intelligence/models/` after you select another provider; delete the `models--oboroge0--Haas-ja-v1.0-onnx-quantized` folder there to fetch it again.
+- Conversational speech comes out with far fewer punctuation marks than Whisper writes, so transcript chunks run longer and subtitle cues break less naturally. Numerals are written as digits and fillers tend to be dropped.
+- `transcription.haas_local.max_segment_seconds` (15 to 120, default 45) is the longest stretch of speech decoded at once. Lowering it lost a clause without any error in measurement; raising it uses more memory (2.66 GB at 120).
+- `transcription.haas_local.num_threads` (at least 1, default 4) is the CPU threads the recognizer uses. A value outside either range is logged and replaced by the default.
+- Memory grows with how long a file is, because the audio is decoded whole and voice detection runs over all of it. Peak for the whole addon process, measured on Linux arm64 at the default settings: about 2.6 GB for 5 minutes, 3.6 GB for 35 minutes, and 7.7 GB for a 3.4-hour file small enough (49 MB) to skip splitting. Files over 50 MB are split, which held a 40-minute file to about 3.3 GB. Memory can stay high after a long job even once the recognizer is released.
+- `memory.whisper_idle_unload` releases the recognizer too.
 
 ## Configuration reference
 
@@ -356,7 +381,7 @@ Every flag except `indexing`, `search` and `auto_tags` does nothing while `llm.p
 llm:
   provider: "disabled"                # ollama | openai_compatible | disabled
   base_url: ""                        # ollama: "http://host.docker.internal:11434"
-  api_key: ""                         # or env LLM_API_KEY (ignored for ollama)
+  api_key: ""                         # or env LLM_API_KEY (ignored for ollama); keep the quotes, a bare number is ignored
   model: ""                           # e.g. "gemma4:e4b", "gpt-4o-mini"
   max_tokens: 8192
   temperature: 0.3
@@ -379,12 +404,12 @@ llm:
 Without `profiles`, this whole section is one profile named `default`, used by every feature, and treated as an **External server** unless it says `offhost: false`. That is how an install from before profiles keeps working unchanged; see [LLM profiles and routing](#llm-profiles-and-routing) to split it.
 
 - `"ollama"`: uses ollama's own API and always asks the model not to reason (`think: false`).
-- `"openai_compatible"`: OpenAI, DeepSeek, vLLM, LM Studio, or ollama's `/v1` endpoint.
+- `"openai_compatible"`: OpenAI, DeepSeek, vLLM, LM Studio, or ollama's `/v1` endpoint, or Anthropic's OpenAI-compatible endpoint (`https://api.anthropic.com/v1`).
 - `"disabled"`: no LLM features. Indexing, search and local tag candidates still work.
 
 `max_tokens` is an upper limit, not a reservation. Providers bill only the tokens the model writes, so a high value costs nothing, and a low one cuts long answers off. Chapter candidates for a long video need the room. An existing `search-config.yml` keeps the value it was created with; raise it there if it is lower.
 
-About `reasoning`: a reasoning model spends `max_tokens` on thinking before it answers, and can come back empty. `"disabled"` asks the provider to skip the thinking. A provider that rejects the request field gets it once, and the addon stops sending it for the rest of the run. `"auto"` never sends the field. Some providers reason anyway; the log says so.
+About `reasoning`: a reasoning model spends `max_tokens` on thinking before it answers, and can come back empty. `"disabled"` asks the provider to skip the thinking. A provider that rejects the request field gets it once, and the addon stops sending it for the rest of the run. JSON mode (`response_format`) is handled the same way: a provider that rejects it, as Anthropic's endpoint does, gets the request again without it, and once that answer comes back the addon stops asking for JSON mode for the rest of the run. The prompts still ask for JSON in words. `"auto"` never sends the field. Some providers reason anyway; the log says so.
 
 ### LLM profiles and routing
 
@@ -417,7 +442,7 @@ llm:
 
 - A profile names its own endpoint and model; only tuning knobs (`temperature`, `max_tokens`, retries, timeouts, `reasoning`, vision limits) are inherited from the top of `llm`. The output language is global and cannot be set per profile.
 - `offhost` says the model runs on a server outside this machine. A profile without it counts as one. Such a profile is used only on drives whose `llm_cloud` policy is on; elsewhere the feature runs on `local_fallback`, or does not run. If the policy cannot be read, nothing is sent and the job is picked up again later.
-- `api_key_env` must be `LLM_API_KEY` or `LLM_API_KEY_<NAME>`. Leave it out for a profile that needs no key. Add the variable to the `intelligence` service in `docker-compose.override.yml`; a new variable needs a container restart.
+- `api_key_env` must be `LLM_API_KEY` or `LLM_API_KEY_<NAME>`. Any other name turns every LLM feature off until it is corrected. Leave it out for a profile that needs no key. Add the variable to the `intelligence` service in `docker-compose.override.yml`; a new variable needs a container restart.
 - Features: `rag` (Ask and Find), `summaries`, `detailed_summaries`, `auto_tags`, `transcript_refine`, `retrieval_keywords`, `chapter_suggestions`, `vision_describe`, `video_visual_index`. A vision feature needs a profile with a `vision_model`.
 - The multi-step Ask runs on a profile with `agentic: true`, or, for the single `default` profile, a model listed in `agentic_models`. `agentic_mode: "off"` stops it for every profile.
 - A mistake in `profiles` or `routing` (an unknown profile or feature, a fallback that is an external server, an invalid key variable) turns every LLM feature off and shows the reason in the settings page.
@@ -482,6 +507,7 @@ rag:
     min_drive_files_for_shortlist: 50
     fallback_full_search: true
     clue_count: 3
+    exact_match_max_files: 10
 
   personal_history:
     enabled: true
@@ -532,12 +558,11 @@ search:
 
 ```yaml
 transcription:
-  provider: whisper_local   # whisper_local | openai_compatible | deepgram | elevenlabs_scribe | assemblyai | gemini
+  provider: whisper_local   # whisper_local | haas_local | openai_compatible | deepgram | elevenlabs_scribe | assemblyai | gemini
   language_hint: ""         # empty = detect
   hotwords: []
 
   whisper_local:
-    model: openai/whisper-large-v3-turbo
     initial_prompt: ""
     beam_size: 1
     batch_size: 0
@@ -545,6 +570,10 @@ transcription:
     compression_ratio_threshold: 2.0
     no_speech_threshold: 0.45
     log_prob_threshold: -1.0
+
+  haas_local:
+    num_threads: 4
+    max_segment_seconds: 45   # 15 to 120
 
   openai_compatible:
     base_url: https://api.openai.com/v1
@@ -613,7 +642,7 @@ memory:
   clip_concepts_idle_unload: 600
 ```
 
-Whisper, BLIP and the tag vocabulary model are unloaded after this many idle seconds. CLIP and the text embedding model stay loaded because search uses them.
+Whisper (or the `haas_local` recognizer, when that is the provider), BLIP and the tag vocabulary model are unloaded after this many idle seconds. CLIP and the text embedding model stay loaded because search uses them.
 
 ## UI surface
 
@@ -627,7 +656,7 @@ Whisper, BLIP and the tag vocabulary model are unloaded after this many idle sec
   - One tab for each summary you paste or write yourself in Markdown, named by its title, and **Add summary** after them for another. **Edit** opens a summary's title and Markdown; otherwise it is shown formatted. Saving an empty text removes it. The first summary opens first when the file has one. Summaries are kept in the intelligence database, so turning intelligence off for the drive deletes them along with the transcript.
   - Tabs that other addons add, between the summaries and **Add summary**. The [media_import addon](media-import.md#youtube-comments) adds **Comments** to a YouTube `.loft`.
 - A **Transcript** section in **Export as Markdown**, the selection bar's action that builds one document from the selected videos (see [browsing files](../user-guide/file-browsing.md#selecting-several-files)). It is the same text as **Transcript by chapter**, under a heading for each video, with the chapters one level down. A video with no transcript has no such section, and you are warned before the document is shown.
-- **Similar files** under the inspector's **Related** tab. It searches only when you expand it, and each result shows keywords it shares with the current file.
+- **Similar files** under the inspector's **Related** tab. It searches when the file opens, or when you open the inspector (on a phone, the sheet), so the results are usually there by the time you open the tab, and each result shows keywords it shares with the current file.
 - **Pickup** on the drive home.
 - **Index details** in the file's `…` menu (see below).
 - **AI** in the folder's `…` menu: **Create AI tag candidates…**, **Create AI summaries…** and **Create image descriptions…**. Each asks first and says how many files. That count is the files the folder has loaded so far, which may not be the whole folder.

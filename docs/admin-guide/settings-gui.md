@@ -18,7 +18,7 @@ Settings cannot mount a new host directory. To add one:
 
 1. Re-run `python3 configure.py`, raise the drive count, enter the new path, and let it overwrite `docker-compose.override.yml`. (Or add `- /host/path:/app/drives/<slug>` under the backend's `volumes:` yourself.)
 2. Run `docker compose up -d --build`.
-3. Press **Add drive** and enter `/app/drives/<slug>` as the path.
+3. Press **Add drive** and enter `/app/drives/<slug>` as the path. The re-run keeps `drives.json`, so a drive whose mount you removed or renamed stays listed until you change or remove it here.
 
 **How to add a new drive** on the page repeats these steps.
 
@@ -45,11 +45,15 @@ A new or deleted password applies from the next unlock. Viewers who already unlo
 
 A table of drives against addons. Each switch turns an addon **On** or **Off** for one drive and saves at once. When an addon declares finer switches, for example the intelligence addon's `transcription_cloud`, `chapter_suggestions` and `llm_cloud` (**Allow sending to cloud LLMs**), they appear as extra rows under the drive while the addon is on for it. What each one does is explained under the table.
 
-A switch that was never saved counts as on. How a disabled addon behaves is described in the [addon overview](../addons/overview.md#per-drive-policy).
+Turning an addon off and on again keeps the finer switches you had set. A switch that was never saved counts as on. How a disabled addon behaves is described in the [addon overview](../addons/overview.md#per-drive-policy).
+
+## Cloud Sync
+
+When the cloud-sync addon is installed, a **Cloud Sync** section sets its schedule, time zone, deletion limit and mappings. Its **Save** applies at once and needs no restart. See the [cloud-sync addon](../addons/cloud-sync.md#settings) page.
 
 ## Restarting
 
-Every save on this page shows **Pending changes — restart required** at the top of the admin pages, with a **Copy** button for the command:
+Every save in the Drives, Passwords and Addon policy sections shows **Pending changes — restart required** at the top of the admin pages, with a **Copy** button for the command:
 
 ```bash
 docker compose restart backend

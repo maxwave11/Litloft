@@ -86,7 +86,7 @@ File ids are 12-character nanoids and are validated as such in the path.
 | `GET` | `/api/files/{id}/stream?download=` | The file's bytes, with `Range` support (`206`, or `416` on a bad range). `410` for a Missing file. Every response carries `X-Content-Type-Options: nosniff`. `text/html`, `application/xhtml+xml`, `image/svg+xml`, `text/xml`, `application/xml` and `application/xslt+xml` are always sent as `Content-Disposition: attachment`; `download=true` does the same for any file, and is the download path. HEIC/HEIF is converted to JPEG. A `text/markdown` or `text/plain` file of 1 MB or less, requested without `Range`, comes back whole with an `ETag` to send as `If-Match` on the content `PUT`. |
 | `GET` | `/api/files/{id}/render` | A `text/html` file (`404` otherwise) as a sandboxed document for an iframe, with `Content-Security-Policy: sandbox allow-scripts allow-popups; default-src 'none'; ...` and an injected script that posts its `scrollHeight` to the parent. UTF-8 only (`415`), 5 MB cap (`413`). |
 | `GET` | `/api/files/{id}/preview-text` | The first 400 characters of a `.docx` / `.xlsx` / `.pptx` file as `text/plain`. `400` for any other mime. |
-| `GET` | `/api/files/{id}/thumbnail` | JPEG, at most 320 px on the long edge; video, PDF and EPUB thumbnails are 320x180. An EPUB's is its declared cover (JPEG, PNG, GIF or WebP). Carries an `ETag` and `Cache-Control: no-cache`; send the `ETag` as `If-None-Match` to get `304` when unchanged. Falls back to a placeholder image. Served for trashed and Missing files too. |
+| `GET` | `/api/files/{id}/thumbnail` | JPEG, or WebP with alpha for a picture that carries transparency, at most 320 px on the long edge; `Content-Type` follows the bytes (`image/jpeg`, `image/webp`, or `image/png` for a `.loft` remote thumbnail saved as PNG); video, PDF and EPUB thumbnails are 320x180. An EPUB's is its declared cover (JPEG, PNG, GIF or WebP). Carries an `ETag` and `Cache-Control: no-cache`; send the `ETag` as `If-None-Match` to get `304` when unchanged. Falls back to a placeholder image. Served for trashed and Missing files too. |
 | `GET` | `/api/files/{id}/exif` | `{ datetime_original, make, model, f_number, exposure_time, iso_speed, focal_length, gps_lat, gps_lon }`. `404` when there is no EXIF data. |
 | `PUT` | `/api/files/{id}/content` | Replace a `text/markdown` or `text/plain` file's body (`415` for other mimes) with the raw UTF-8 request body, 1 MB cap. Requires `If-Match` with the current ETag (`428` when absent, `412` on mismatch). Send `X-Litloft-Save-Kind: explicit` for a user-initiated save; anything else is recorded as `auto`. Responds `200` with the new `ETag`, and `X-Litloft-Version-Action: created \| collapsed \| promoted \| unchanged` when the version history was touched. For Markdown it adds a frontmatter `id:` when missing and updates the file's tags, aliases, relations and thumbnail from the body. Those updates commit separately, so a failure in one does not undo the write. |
 | `GET` | `/api/files/{id}/versions?limit=&offset=` | Version history of a text file: `{ versions: [{ id, created_at, nickname, kind, size_bytes, lines_added, lines_removed }], total, limit, offset }`. `kind` is `auto` or `explicit`. `404` for a file outside the text allowlist. `Cache-Control: no-store`. |
@@ -183,7 +183,7 @@ Keyword search is the `search` parameter of `GET /api/drives/{drive}/files`. Sem
 |---|---|---|
 | `POST` | `/api/drives/{drive}/upload/init` | Body `{ filename, file_size, folder_path, relative_path, chunk_size }`; `chunk_size` defaults to 5 MiB. Returns `{ upload_id, chunk_size, total_chunks }`. |
 | `POST` | `/api/drives/{drive}/upload/{upload_id}/chunk` | `multipart/form-data` with `chunk_index` and `chunk`. Returns the received and total chunk counts. |
-| `POST` | `/api/drives/{drive}/upload/{upload_id}/complete` | Finish and return the file. An upload to the path of a Missing file revives that record. |
+| `POST` | `/api/drives/{drive}/upload/{upload_id}/complete` | Finish and return the file. An upload to the path of a Missing file revives that record. A subtitle (`.srt`, `.vtt` and the other subtitle extensions) is a sidecar file and gets no record: the answer is `{ "status": "sidecar", "drive", "file_path" }`, and a record already at that path is removed. |
 | `DELETE` | `/api/drives/{drive}/upload/{upload_id}` | Cancel. |
 
 An upload session belongs to the drive it was opened on; using it under another drive is `404`.
@@ -248,6 +248,7 @@ Examples:
 - `POST /api/addons/intelligence/refine/files/{id}`
 - `POST /api/addons/knowledge/clips`
 - `GET /api/addons/cloud-sync/status`
+- `GET /api/addons/cloud-sync/config`, `PUT /api/addons/cloud-sync/config`
 - `POST /api/addons/media_import/link`
 
 Each addon's page under [`docs/addons/`](../addons/) documents its endpoints.

@@ -28,6 +28,7 @@ from app.services.frontmatter import (
     parse as parse_frontmatter,
 )
 from app.services.hash import compute_file_hash
+from app.services.tagops import cleanup_orphan_tags, project_frontmatter_tags
 from app.services.image_dimensions import read_image_dimensions
 from app.services.markdown_images import project_markdown_thumbnail
 from app.services.maintenance import (
@@ -36,7 +37,10 @@ from app.services.maintenance import (
     maintenance_operation,
 )
 from app.services.subtitle import is_subtitle_file
+from app.services.heic import is_heic_file
 from app.services.thumbnail import (
+    carries_transparency,
+    generate_webp_image_thumbnail,
     get_thumbnail_generator,
     get_video_duration,
     image_thumbnail_size,
@@ -188,6 +192,43 @@ def _is_letterboxed_image_thumbnail(file_record: File) -> bool:
         return False
 
 
+_JPEG_SIGNATURE = b"\xff\xd8\xff"
+
+
+def _is_flattened_transparent_picture(
+    db: Session, file_record: File, item_path: Path
+) -> bool:
+    """Whether this picture's stored thumbnail is a JPEG that lost its alpha.
+
+    Cheapest test first, so a picture already moved to WebP stops at the
+    stored thumbnail's first bytes and its source is never opened.
+
+    A slot another row also points at is left alone: slots are keyed by
+    stem, so `logo.png` beside `logo.jpg` share one, and writing it would
+    change which of the two files the thumbnail shows.
+    """
+    if file_record.mime_type == "image/jpeg" or is_heic_file(str(item_path)):
+        return False
+    try:
+        with open(config.THUMBNAILS_DIR / file_record.thumbnail_path, "rb") as stored:
+            if stored.read(len(_JPEG_SIGNATURE)) != _JPEG_SIGNATURE:
+                return False
+    except OSError:
+        return False
+    shared = (
+        db.query(File.id)
+        .filter(
+            File.drive == file_record.drive,
+            File.thumbnail_path == file_record.thumbnail_path,
+            File.id != file_record.id,
+        )
+        .first()
+    )
+    if shared is not None:
+        return False
+    return carries_transparency(item_path)
+
+
 def _relocate_thumbnail(
     file_record: File,
     new_thumb_rel: str,
@@ -226,7 +267,8 @@ def _ensure_md_id_for_new_file(
     file_path: Path,
 ) -> None:
     """For ``.md`` files: read frontmatter, ensure ``id:`` and project
-    ``id`` + ``aliases`` to ``File.md_id`` / ``File.md_aliases``.
+    ``id``, ``aliases`` and ``tags`` to ``File.md_id`` / ``File.md_aliases`` /
+    ``File.tags``.
 
     No-op when the file is not markdown, has no frontmatter, or is too
     large to safely parse. When the frontmatter has no ``id:``, generate
@@ -248,6 +290,8 @@ def _ensure_md_id_for_new_file(
     parsed = parse_frontmatter(content)
     if not parsed.metadata:
         return
+
+    project_frontmatter_tags(db, file_record, content)
 
     fm_id_raw = parsed.metadata.get("id")
     now = datetime.now(UTC)
@@ -391,6 +435,24 @@ def _scan_and_register(db: Session, drive_name: str) -> dict[str, int]:
         f.file_path: f
         for f in db.query(File).filter(File.drive == drive_name).all()
     }
+    # A subtitle is a sidecar file, never a record. Rows left by an earlier
+    # upload are dropped here; the file on disk is not touched. A trashed row
+    # stays for the trash's own purge.
+    stale_subtitles = [
+        row
+        for row in existing.values()
+        if row.deleted_at is None and is_subtitle_file(row.filename)
+    ]
+    if stale_subtitles:
+        for row in stale_subtitles:
+            del existing[row.file_path]
+            db.delete(row)
+        db.flush()
+        cleanup_orphan_tags(db, drive_name)
+        logger.info(
+            "Dropped %d subtitle records (drive: %s)", len(stale_subtitles), drive_name
+        )
+
     found_paths: set[str] = set()
     pending_new: list[dict] = []
     added = 0
@@ -471,6 +533,18 @@ def _scan_and_register(db: Session, drive_name: str) -> dict[str, int]:
                 ).exists():
                     _relocate_thumbnail(file_record, expected_thumb, file_type, item)
                     needs_update = True
+                elif file_type == "image" and _is_flattened_transparent_picture(
+                    db, file_record, item
+                ):
+                    # WebP only: a JPEG fallback would rewrite the stored
+                    # JPEG on every scan, churning its ETag and every
+                    # Markdown projection copied from it.
+                    if write_thumbnail_atomically(
+                        generate_webp_image_thumbnail,
+                        str(item),
+                        str(config.THUMBNAILS_DIR / expected_thumb),
+                    ):
+                        needs_update = True
                 elif file_type == "image" and _is_letterboxed_image_thumbnail(
                     file_record
                 ):

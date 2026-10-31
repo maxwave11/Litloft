@@ -4,15 +4,15 @@ Every configuration file Litloft reads, with its keys, defaults and validation. 
 
 | File | What it configures | Edited by |
 |---|---|---|
-| `drives.json` | Drives and per-drive addon policy | `configure.py` writes `[]`; the backend seeds it from mounts; then `/setup`, `/admin/settings`, or by hand |
-| `passwords.json` | Access groups | `configure.py` writes `[]`; then `/setup`, `/admin/settings`, or by hand |
+| `drives.json` | Drives and per-drive addon policy | `configure.py` writes `[]` when absent; the backend seeds it from mounts; then `/setup`, `/admin/settings`, or by hand |
+| `passwords.json` | Access groups | `configure.py` writes `[]` when absent; then `/setup`, `/admin/settings`, or by hand |
 | `.env` | Secrets and variables Compose interpolates | `configure.py`, then by hand |
 | `docker-compose.override.yml` | Mounts, ports, addon services | `configure.py`, or by hand from the example |
 | `addons/intelligence/search-config.yml` | AI features | `configure.py` copies the example; then by hand, or `/admin/settings` for some sections |
-| `addons/cloud-sync/sync-config.json` | Backup schedule | By hand |
+| `data/addons/cloud-sync/sync-config.json` | Backup schedule and mappings | `/admin/settings` |
 | `event-hooks.json` | Webhooks to addons | `configure.py` (from addon manifests), then by hand |
 
-`configure.py` only writes container wiring: `docker-compose.override.yml`, `.env`, empty `drives.json` and `passwords.json`, `event-hooks.json`, and a copy of `search-config.yml` when intelligence is enabled. Drive names, passwords, access groups and addon policy are set in `/setup` and `/admin/settings`.
+`configure.py` only writes container wiring: `docker-compose.override.yml`, `.env`, empty `drives.json` and `passwords.json`, `event-hooks.json`, and a copy of `search-config.yml` when intelligence is enabled. On a re-run it never overwrites an existing `passwords.json`; once `/setup` has been completed it also keeps an existing `drives.json` and `search-config.yml` without asking. Drive names, passwords, access groups and addon policy are set in `/setup` and `/admin/settings`.
 
 ### Never delete a mounted file
 
@@ -64,6 +64,7 @@ Each entry under `addons` is either a `bool` for the whole addon or an object of
 - `"knowledge": false`: every feature of that addon is off for this drive.
 - `"intelligence": {"rag": false}`: `rag` is off; every other feature is on.
 - Key absent: everything is on.
+- `"intelligence": {"llm_cloud": false, "_all": false}`: `_all: false` in an object turns the whole addon off, and the other keys are kept so `/admin/settings` can bring them back when the addon is turned on again.
 
 Unlisted addons and features are on. The core does not interpret addon or feature names. `GET /api/drives/{name}/addon-policies` returns the normalised `{default, features}` view to the frontend, and `GET /api/internal/drive-policy` returns the same to addons. The settings API rejects a policy that names an unknown drive or an addon that is not installed.
 
@@ -131,10 +132,10 @@ Read once when the intelligence container starts, from `SEARCH_CONFIG_PATH` (def
 | `rag` | Top-k, context budgets, retrieval options, personal history |
 | `models` | Whisper, text embedding, CLIP, BLIP model IDs |
 | `search` | Vector/keyword weighting, limits, score floors |
-| `transcription` | Provider (`whisper_local`, `openai_compatible`, `deepgram`, `elevenlabs_scribe`, `assemblyai`, `gemini`) and provider settings |
+| `transcription` | Provider (`whisper_local`, `haas_local`, `openai_compatible`, `deepgram`, `elevenlabs_scribe`, `assemblyai`, `gemini`) and provider settings |
 | `indexing` | Reconciliation interval, frame extraction, text chunking |
 | `workers` | Concurrency and batch sizes |
-| `memory` | Idle-unload thresholds for Whisper and BLIP |
+| `memory` | Idle-unload thresholds for Whisper (and the `haas_local` recognizer) and BLIP |
 
 The intelligence sections of `/admin/settings` save JSON override files in its data directory for `features`, `llm`, `rag`, the embedding model, and the transcription provider. They are merged over the yaml. LLM profiles and routing saved there replace `llm.profiles` and `llm.routing` in the yaml as a whole and apply without a restart. Keys come only from the environment (`LLM_API_KEY`, `LLM_API_KEY_<NAME>`).
 
@@ -142,26 +143,23 @@ The full key list with defaults is on the [intelligence page](../addons/intellig
 
 ---
 
-## addons/cloud-sync/sync-config.json
+## data/addons/cloud-sync/sync-config.json
+
+Written by the **Cloud Sync** section of `/admin/settings`; edit it there. The settings and the rules a save must pass are on the [cloud-sync addon](../addons/cloud-sync.md#settings) page.
 
 ```json
 {
-  "schedule": "0 */6 * * *",
+  "schema_version": 1,
+  "schedule": "0 3 * * *",
+  "timezone": "Asia/Tokyo",
+  "max_delete": 200,
   "mappings": [
-    { "drive": "Movies", "remote": "gdrive:litloft/movies" }
+    { "drive": "Movies", "path": "", "remote": "gdrive:litloft/movies" }
   ]
 }
 ```
 
-| Field | Type | What it does |
-|---|---|---|
-| `schedule` | cron string or `null` | Automatic sync schedule. `null` or absent turns the scheduler off. An invalid expression is logged and the scheduler does not start. |
-| `mappings[].drive` | string | Drive name from `drives.json`. |
-| `mappings[].remote` | string | rclone remote target. Must contain `:` and must not start with `-`. |
-
-A missing or unparseable file is logged and treated as having no mappings.
-
-See [cloud-sync addon](../addons/cloud-sync.md).
+A file the addon cannot read (not JSON, a `schema_version` other than `1`, or a value that breaks a rule) is logged and treated as having no mappings and no schedule until the settings are saved again. `addons/cloud-sync/sync-config.json`, beside the addon, is not read.
 
 ---
 

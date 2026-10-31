@@ -1360,7 +1360,7 @@ code into the addon.
 
 | Addon | Type | Scope | Page | Guide |
 |-------|------|-------|------|-------|
-| `cloud-sync` | In-process | `global` | none (dashboard widget; admin only) | [addons/cloud-sync.md](addons/cloud-sync.md) |
+| `cloud-sync` | In-process | `global` | none (dashboard widget and settings section; admin only) | [addons/cloud-sync.md](addons/cloud-sync.md) |
 | `media_import` | In-process | `drive` | yes | [addons/media-import.md](addons/media-import.md) |
 | `intelligence` | External service (port 8100) | `drive` | yes | [addons/intelligence.md](addons/intelligence.md) |
 | `knowledge` | External service (port 8200) | `drive` | yes | [addons/knowledge.md](addons/knowledge.md) |
@@ -1401,4 +1401,4 @@ Slot entries each addon declares, for reference when designing your own.
 | `media_import` | `selection-bar-actions` | `comments-load` |
 | `media_import` | `folder-actions-menu` | `media-import-url` |
 | `media_import` | `file-actions-menu` | `loft-refresh` |
-| `cloud-sync` | `dashboard-widgets` | `cloud-sync` |
+| `cloud-sync` | `dashboard-widgets`, `admin-settings-sections` | `cloud-sync`, `cloud-sync-settings` |

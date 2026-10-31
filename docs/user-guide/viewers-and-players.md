@@ -76,11 +76,12 @@ Litloft draws its own control bar over the video. It looks different with a mous
 - Gestures: on touch, tap to show the controls, double-tap the left or right half to skip 10 s (keep tapping to skip further), press and hold to play at 2x, and swipe up or down or pinch for full screen. With a mouse, click to play or pause and double-click for full screen. See [keyboard shortcuts and gestures](keyboard-shortcuts.md).
 - **Settings**: subtitles and playback speed, plus **Picture-in-Picture**, **Autoplay** (off by default), a subtitle track picker when there is more than one, and **Browser controls**. On an iPhone there is also **Open in the iOS player**.
 - **Browser controls** hands the video to the browser's own bar, which is where AirPlay lives. **Use Litloft controls**, under the player, switches back.
-- **Subtitles**: put `movie.srt` or `movie.vtt` next to `movie.mp4`, or `movie.en.srt`, `movie.ja.vtt` and so on for several languages. They load automatically, for `.loft` files too, and do not appear in the file list. Without one, the intelligence addon's generated track is offered.
+- **Subtitles**: put `movie.srt` or `movie.vtt` next to `movie.mp4`, or `movie.en.srt`, `movie.ja.vtt` and so on for several languages. They load automatically, for `.loft` files too, and do not appear in the file list. Renaming or moving the video in Litloft takes them along. Without one, the intelligence addon's generated track is offered.
 - Resume: a video starts where you left off. A link with a time in it, such as an Ask citation or `/files/<id>?t=<seconds>`, starts there instead, begins playing, and opens the Transcript tab. A YouTube (`.loft`) video opened from a link in another app may start muted, because the browser allows sound only after you have clicked on the page; press the mute button to hear it.
 - Mini player: on a computer, scrolling the video out of view shrinks it into a small window at the bottom right. It has only play, time, mute and seeking; set speed and subtitles before you scroll away, or restore the full player.
 - The lock screen and media keys control playback, including next and previous in a collection.
 - **Cast**: a Chromecast button appears when one is found.
+- `.mts` files have no player, because that extension also names a TypeScript module. For footage from a camcorder, rename them to `.m2ts`.
 
 In the [iOS app](ios-app.md), leaving the app moves the video into picture-in-picture, and there is no mini player.
 
@@ -154,7 +155,7 @@ Text and source files are shown read-only, with line numbers. Copying the text l
 
 A file over 1 MB asks before it loads. A very large file is shown without numbers or colour.
 
-Only Markdown notes can be edited in the app (see above).
+Markdown notes can be edited in the app (see above), and so can a `.txt` file up to 1 MB when the knowledge editor is on. A `.txt` opens in **Preview** and has an **Edit** switch beside the name; see [the editor](../addons/knowledge.md#the-editor). A `.txt` that is not UTF-8 text, or whose line endings are mixed, opens read-only. Other text and source files stay read-only.
 
 ## Imported videos (media_import addon)
 
