@@ -283,7 +283,11 @@ The rules a new endpoint must pass are in [Internal API policy](../developer-gui
 
 Channel history import: the media_import addon exposes drive-scoped `POST` and `DELETE /api/addons/media_import/subscriptions/{id}/fetch-all`. See [Media Import](../addons/media-import.md#fetching-a-whole-channel) for request constraints and subscription state fields.
 
-`POST /api/addons/media_import/subscriptions/{id}/backfill` accepts `{ "count": 15 }` (`1`–`200`) and enqueues up to that many unseen uploads. YouTube channels use the full uploads list, including Shorts and saved livestreams; playlists use their normal listing. The response is `{ "status": "queued" }` or `{ "status": "already_queued" }`. Backfill and manual sync return 409 while Fetch all is active or during its error cooldown.
+`POST /api/addons/media_import/subscriptions/{id}/backfill` accepts `{ "count": 15 }` (`1`–`200`) and enqueues up to that many unseen uploads. YouTube channels use the full uploads list, including Shorts and saved livestreams, unless the subscription has `include_shorts` set to `false`; playlists use their normal listing. The response is `{ "status": "queued" }` or `{ "status": "already_queued" }`. Backfill and manual sync return 409 while Fetch all is active or during its error cooldown.
+
+`POST /api/addons/media_import/subscriptions/{id}/remove-shorts` queues moving the Shorts already imported from a YouTube channel to the Trash. It answers `{ "status": "queued" }` or `{ "status": "already_queued" }`; the outcome arrives on `media_import.subscription.sync_completed` with `kind: "purge_shorts"` and `{ "removed", "matched" }`. The subscription keeps the items on record, so a later sync does not import them again. Sources without a Shorts listing return 400.
+
+Subscriptions take `include_shorts` (boolean, default `true`) on creation and on `PATCH`; it controls only what future listings import, never the files already saved.
 
 ## Addon YouTube comments
 

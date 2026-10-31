@@ -166,10 +166,13 @@ Paste a YouTube channel or playlist URL into **Add a source** and choose **Subsc
 
 Litloft checks each subscription for new videos about once an hour. The interval is the subscription's **Cooldown (min)**, 60 by default. New videos are saved as `.loft` files in the subscription's destination folder.
 
+A YouTube channel's Shorts are ordinary uploads, so a channel subscription imports them too. Each channel has an **Import Shorts** setting in its details, also offered under **Advanced** when you add it. Unchecked, new syncs read the channel's Videos tab, so only regular videos are imported; videos already imported are left alone.
+
 A subscription's details show its schedule, destination and imported items, with:
 
 - **Pause** / **Resume**, and **Sync now** to check immediately;
-- **Fetch more** to import up to the selected number of uploads not yet in the subscription, including Shorts and saved livestreams for YouTube channels. The request runs in the background;
+- **Fetch more** to import up to the selected number of uploads not yet in the subscription, including Shorts and saved livestreams for YouTube channels when **Import Shorts** is checked. The request runs in the background;
+- **Remove Shorts** for a YouTube channel, which moves every Short already imported from it to the Trash. The subscription keeps those items on record, so the next sync does not import them again;
 - **Retry** and **Ignore** for failed items;
 - **Resolve…** for an item whose filename is already taken;
 - **Delete subscription**, which stops tracking new videos. Files already imported stay.
@@ -180,6 +183,7 @@ A subscription's details show its schedule, destination and imported items, with
 - yt-dlp reads public web pages, and the provider may throttle many imports made in a short time. Throttled caption downloads are retried later.
 - Encrypted (DRM) streams are not supported.
 - Only the top comments of a YouTube video are saved, not all of them, and not for Vimeo or other sites.
+- **Remove Shorts** finds them through the channel's Shorts tab. A Short the channel has since removed or made private no longer appears there, so it stays imported, and a channel with more than 5000 Shorts is only scanned that deep.
 - Some videos cannot be embedded outside the provider's site.
 
 ## Troubleshooting
@@ -208,6 +212,8 @@ Video cards show the saved channel name and a comments icon alongside the transc
 ## Fetching a whole channel
 
 Open a channel's detail panel in **Manage** and select **Fetch all channel**. The background worker imports public uploads into `.loft` entries, including Shorts and saved livestreams, with available metadata and captions. It does not download video files. Each batch imports at most 15 new entries, spaces new video requests by at least eight seconds, waits 2–3 minutes after finishing, and continues. You can close the page; progress and the next attempt survive a backend restart.
+
+With **Import Shorts** unchecked, the task lists the channel's Videos tab instead, so Shorts are not imported.
 
 **Stop fetching** stops before the next video; a request already in progress may finish. Pausing the subscription pauses the task too. Existing imports are kept. The panel shows completion, a pause, or an error, and the next batch time while waiting. Manual **Fetch more** and **Sync now** are unavailable while the task is active.
 
